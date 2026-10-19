@@ -44,6 +44,37 @@ object TripCalculator {
     }
 
     /**
+     * Costruisce il record da salvare nello storico.
+     * Restituisce null se mancano dati: alla colonnina serve l'importo pagato.
+     */
+    fun record(
+        mode: ChargeMode,
+        percent: Double,
+        capacityKwh: Double,
+        tariffPerKwh: Double,
+        amountPaid: Double?,
+        km: Double?,
+        timestamp: Long,
+    ): TripRecord? {
+        val kwh = kwhFromPercent(percent, capacityKwh)
+        if (percent <= 0.0 || kwh <= 0.0) return null
+        return when (mode) {
+            ChargeMode.HOME -> TripRecord(
+                id = timestamp, mode = mode, percent = percent, capacityKwh = capacityKwh,
+                kwh = kwh, cost = kwh * tariffPerKwh, costPerKwh = tariffPerKwh, km = km,
+            )
+
+            ChargeMode.PUBLIC -> {
+                val paid = amountPaid ?: return null
+                TripRecord(
+                    id = timestamp, mode = mode, percent = percent, capacityKwh = capacityKwh,
+                    kwh = kwh, cost = paid, costPerKwh = paid / kwh, km = km,
+                )
+            }
+        }
+    }
+
+    /**
      * Consumo medio e costo al km a partire da energia consumata, costo del viaggio e km percorsi.
      * Restituisce null se i km non sono positivi.
      */

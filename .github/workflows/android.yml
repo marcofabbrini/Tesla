@@ -22,23 +22,39 @@ jobs:
         with:
           gradle-version: 8.9
 
-      - name: Test e build APK debug
-        run: gradle testDebugUnitTest assembleDebug
+      # La chiave di firma sta nei secret del repository. Senza chiave (per esempio nei fork)
+      # la build usa la firma di debug e l'APK non potrà aggiornare quello firmato con la chiave vera.
+      - name: Prepara la firma
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          else
+            echo "Nessuna chiave di firma configurata: uso la firma di debug."
+          fi
+
+      - name: Test e build APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: gradle testDebugUnitTest assembleRelease
 
       - uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: app-release
+          path: app/build/outputs/apk/release/app-release.apk
 
       - name: Pubblica l'APK nella Release "latest"
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk TeslaChargeCost.apk
+          cp app/build/outputs/apk/release/app-release.apk TeslaChargeCost.apk
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest TeslaChargeCost.apk \
             --target "${{ github.sha }}" \
-            --title "Tesla Charge Cost (ultima build)" \
-            --notes "APK debug installabile su Android. Scaricalo dal telefono e abilita l'installazione da fonti sconosciute." \
+            --title "Tesla Charge Cost (ultima build ${{ github.run_number }})" \
+            --notes "APK installabile su Android. Scaricalo dal telefono e abilita l'installazione da fonti sconosciute. Si aggiorna sovrapponendolo alla versione già installata." \
             --latest

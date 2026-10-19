@@ -161,6 +161,7 @@ fun NeonTextButton(label: String, onClick: () -> Unit, modifier: Modifier = Modi
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
         letterSpacing = 1.5.sp,
+        textAlign = TextAlign.Center,
     )
 }
 

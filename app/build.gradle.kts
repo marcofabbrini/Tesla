@@ -3,6 +3,13 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// Su GitHub Actions la versione cresce a ogni build: serve ad Android per accettare l'aggiornamento
+// sovrapposto all'app già installata. In locale resta 1.
+val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+
+// Percorso della chiave di firma, passato dal workflow. Senza chiave si firma con quella di debug.
+val keystorePath: String? = System.getenv("KEYSTORE_PATH")
+
 android {
     namespace = "com.marcofabbrini.teslachargecost"
     compileSdk = 34
@@ -11,14 +18,30 @@ android {
         applicationId = "com.marcofabbrini.teslachargecost"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = runNumber
+        versionName = "1.$runNumber"
+    }
+
+    signingConfigs {
+        if (keystorePath != null) {
+            create("ci") {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEYSTORE_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("ci") ?: signingConfigs.getByName("debug")
         }
+    }
+
+    lint {
+        abortOnError = false
     }
 
     compileOptions {

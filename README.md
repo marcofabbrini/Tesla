@@ -15,6 +15,13 @@ Si inserisce la percentuale consumata in un campo grande, leggibile a colpo d'oc
 In entrambe le modalità puoi indicare anche i **km percorsi** (facoltativo): l'app calcola il consumo
 medio (Wh/km e kWh/100 km) e il costo al km e ogni 100 km.
 
+## Storico
+
+Il pulsante **Salva consumo** registra il calcolo corrente (data e ora, modalità, percentuale, kWh, costo,
+km). La schermata **Storico** mostra un riepilogo (totali e medie) e l'elenco dei viaggi, dal più recente,
+con la possibilità di eliminarli. I dati restano solo sul dispositivo. Ogni record conserva la capacità batteria
+e il prezzo dell'energia usati, quindi non cambia se modifichi poi le impostazioni.
+
 ## Impostazioni
 
 Modificabili dall'app e salvate in locale sul dispositivo (DataStore, nessun backend):
@@ -48,18 +55,34 @@ gradle testDebugUnitTest      # esegue i test
 ```
 
 Aprendo la cartella con Android Studio, il wrapper Gradle viene generato automaticamente.
-Il workflow `.github/workflows/android.yml` compila e testa a ogni push e carica l'APK come artefatto.
+Il workflow `.github/workflows/android.yml` compila e testa a ogni push, pubblica l'APK nella Release `latest`
+e lo carica come artefatto.
+
+## Aggiornare l'app sovrapponendo l'APK
+
+Android accetta un aggiornamento solo se l'APK nuovo ha lo stesso nome pacchetto, la **stessa chiave di firma**
+e un `versionCode` più alto. Il `versionCode` è il numero della build su GitHub Actions e cresce da solo.
+La chiave di firma va impostata una volta nei secret del repository (Settings, Secrets and variables, Actions):
+
+| Secret | Contenuto |
+|---|---|
+| `KEYSTORE_B64` | il file `.jks` codificato in base64 |
+| `KEYSTORE_PASSWORD` | password del keystore (e della chiave) |
+| `KEY_ALIAS` | alias della chiave (`teslachargecost`) |
+
+Conserva una copia della chiave: senza, i nuovi APK non potranno aggiornare quelli già installati.
 
 ## Struttura
 
 ```
 app/src/main/java/com/marcofabbrini/teslachargecost/
 ├── MainActivity.kt
-├── data/   TripCalculator.kt, SettingsRepository.kt
-└── ui/     HomeScreen.kt, SettingsScreen.kt, Header.kt, Neon.kt, theme/
+├── data/   TripCalculator.kt, SettingsRepository.kt, TripRepository.kt, TripRecord.kt, HistoryStats.kt
+└── ui/     HomeScreen.kt, HistoryScreen.kt, SettingsScreen.kt, Header.kt, Neon.kt, theme/
 ```
 
 ## Idee future
 
 - Integrazione con il progetto 3DKnife
-- Storico dei viaggi
+- Grafici dell'andamento dei consumi
+- Esportazione dello storico (CSV)

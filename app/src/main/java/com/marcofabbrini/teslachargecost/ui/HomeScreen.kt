@@ -13,11 +13,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,24 +34,42 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.marcofabbrini.teslachargecost.data.ChargeMode
 import com.marcofabbrini.teslachargecost.data.Settings
 import com.marcofabbrini.teslachargecost.data.TripCalculator
+import com.marcofabbrini.teslachargecost.data.TripRecord
 import java.util.Locale
+import kotlinx.coroutines.delay
 
 private enum class Mode { HOME, PUBLIC }
 
 @Composable
-fun HomeScreen(settings: Settings, onOpenSettings: () -> Unit) {
+fun HomeScreen(
+    settings: Settings,
+    onOpenSettings: () -> Unit,
+    onOpenHistory: () -> Unit,
+    onSaveTrip: (TripRecord) -> Unit,
+) {
     var mode by rememberSaveable { mutableStateOf(Mode.HOME) }
     var percentText by rememberSaveable { mutableStateOf("") }
     var paidText by rememberSaveable { mutableStateOf("") }
     var kmText by rememberSaveable { mutableStateOf("") }
+    var saved by remember { mutableStateOf(false) }
+
+    // Dopo il salvataggio il pulsante resta disattivato per un attimo: evita doppi salvataggi involontari
+    LaunchedEffect(saved) {
+        if (saved) {
+            delay(2500)
+            saved = false
+        }
+    }
 
     val percent = percentText.toDoubleOrNullIt()?.takeIf { it in 0.0..100.0 }
     val paid = paidText.toDoubleOrNullIt()?.takeIf { it >= 0.0 }
     val km = kmText.toDoubleOrNullIt()?.takeIf { it > 0.0 }
     val kmInvalid = kmText.isNotBlank() && km == null
     val percentInvalid = percentText.isNotBlank() && percent == null
+    val canSave = percent != null && percent > 0.0 && (mode == Mode.HOME || paid != null)
 
     NeonBackground {
         Column(
@@ -57,19 +79,19 @@ fun HomeScreen(settings: Settings, onOpenSettings: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            Text(
+                "TESLA CHARGE COST",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 3.sp,
+            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(
-                    "TESLA CHARGE COST",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 3.sp,
-                )
-                NeonTextButton("Impostazioni", onOpenSettings)
+                NeonTextButton("Storico", onOpenHistory, Modifier.weight(1f))
+                NeonTextButton("Impostazioni", onOpenSettings, Modifier.weight(1f))
             }
 
             HeaderImage(imageUri = settings.headerImageUri)
@@ -123,6 +145,42 @@ fun HomeScreen(settings: Settings, onOpenSettings: () -> Unit) {
             )
 
             ResultCard(mode, percent, paid, km, settings)
+
+            Button(
+                onClick = {
+                    percent?.let { p ->
+                        TripCalculator.record(
+                            mode = if (mode == Mode.HOME) ChargeMode.HOME else ChargeMode.PUBLIC,
+                            percent = p,
+                            capacityKwh = settings.batteryCapacityKwh,
+                            tariffPerKwh = settings.homeTariff,
+                            amountPaid = paid,
+                            km = km,
+                            timestamp = System.currentTimeMillis(),
+                        )?.let { record ->
+                            onSaveTrip(record)
+                            saved = true
+                        }
+                    }
+                },
+                enabled = canSave && !saved,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Neon.Cyan,
+                    contentColor = Color(0xFF00252B),
+                    disabledContainerColor = Color(0xFF16263F),
+                    disabledContentColor = if (saved) Neon.Cyan else Neon.TextDim,
+                ),
+            ) {
+                Text(
+                    if (saved) "SALVATO NELLO STORICO" else "SALVA CONSUMO",
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp,
+                )
+            }
         }
     }
 }
