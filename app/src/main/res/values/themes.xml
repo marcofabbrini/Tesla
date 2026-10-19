@@ -1,7 +1,7 @@
 <resources>
     <style name="Theme.TeslaChargeCost" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">#FF0A0405</item>
-        <item name="android:statusBarColor">#FF14070B</item>
-        <item name="android:navigationBarColor">#FF0A0405</item>
+        <item name="android:windowBackground">#FF07080A</item>
+        <item name="android:statusBarColor">#FF101114</item>
+        <item name="android:navigationBarColor">#FF07080A</item>
     </style>
 </resources>

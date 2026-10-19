@@ -101,16 +101,6 @@ fun HomeScreen(
             // Spazio in cui si vede l'auto sullo sfondo
             Spacer(Modifier.height(100.dp))
 
-            NeonToggle(
-                options = listOf("Ricarica a casa", "Colonnina pubblica"),
-                selectedIndex = mode.ordinal,
-                onSelect = { mode = Mode.values()[it] },
-            )
-
-            if (mode == Mode.HOME) {
-                FreeChargeCheck(checked = freeCharge, onCheckedChange = { freeCharge = it })
-            }
-
             NeonLabel("Punti percentuale consumati", Modifier.padding(start = 4.dp))
             LcdPercentField(
                 value = percentText,
@@ -124,6 +114,16 @@ fun HomeScreen(
                     color = Neon.Warn,
                     fontSize = 13.sp,
                 )
+            }
+
+            NeonToggle(
+                options = listOf("Ricarica a casa", "Colonnina pubblica"),
+                selectedIndex = mode.ordinal,
+                onSelect = { mode = Mode.values()[it] },
+            )
+
+            if (mode == Mode.HOME) {
+                FreeChargeCheck(checked = freeCharge, onCheckedChange = { freeCharge = it })
             }
 
             if (mode == Mode.PUBLIC) {
@@ -201,7 +201,7 @@ private fun FreeChargeCheck(checked: Boolean, onCheckedChange: (Boolean) -> Unit
             colors = CheckboxDefaults.colors(
                 checkedColor = Neon.Accent,
                 uncheckedColor = Neon.Outline,
-                checkmarkColor = Color(0xFF1A0508),
+                checkmarkColor = Color(0xFF14151A),
             ),
         )
         Text(
@@ -222,10 +222,10 @@ private fun ResultCard(
     settings: Settings,
     free: Boolean,
 ) {
+    // Senza percentuale non c'è nulla da mostrare
+    if (percent == null) return
     GlassCard(glow = Neon.Accent2) {
         when {
-            percent == null -> Hint("Inserisci i punti percentuale per vedere il risultato.")
-
             mode == Mode.HOME -> {
                 val tariff = if (free) 0.0 else settings.homeTariff
                 val r = TripCalculator.home(percent, settings.batteryCapacityKwh, tariff)

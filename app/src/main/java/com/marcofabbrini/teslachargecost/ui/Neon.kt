@@ -1,5 +1,12 @@
 package com.marcofabbrini.teslachargecost.ui
 
+import android.graphics.Matrix
+import android.graphics.SweepGradient
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.ui.graphics.Shader
+import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -73,14 +80,15 @@ import com.marcofabbrini.teslachargecost.R
 
 /** Palette dell'interfaccia futuristica. */
 object Neon {
-    val BgTop = Color(0xFF14070B)
-    val BgBottom = Color(0xFF0A0405)
-    val Panel = Color(0xFF1C0A10)
-    val Accent = Color(0xFFFF2A3D)
-    val Accent2 = Color(0xFF9E1226)
+    val BgTop = Color(0xFF101114)
+    val BgBottom = Color(0xFF07080A)
+    val Panel = Color(0xFF17181C)
+    val Red = Color(0xFFFF2A3D)
+    val Accent = Color(0xFFD4D7DC)
+    val Accent2 = Color(0xFF8D929B)
     val Warn = Color(0xFFFFB020)
-    val Outline = Color(0xFF4A1C26)
-    val TextDim = Color(0xFFB3A3A6)
+    val Outline = Color(0xFF3A3D44)
+    val TextDim = Color(0xFFA4A8B0)
 }
 
 /** Font LCD a 7 segmenti (DSEG, licenza SIL OFL) usato solo per il numero della percentuale. */
@@ -118,18 +126,40 @@ fun NeonTitle(text: String, modifier: Modifier = Modifier) {
             text,
             maxLines = 1,
             softWrap = false,
-            color = Neon.Accent,
+            color = Neon.Red,
             style = probe.copy(
                 fontSize = sizeSp.sp,
-                shadow = Shadow(Neon.Accent.copy(alpha = 0.65f), Offset.Zero, sizeSp * 0.35f),
+                shadow = Shadow(Neon.Red.copy(alpha = 0.65f), Offset.Zero, sizeSp * 0.35f),
             ),
         )
+    }
+}
+
+/** Pennello a cometa rossa: una coda che sfuma e una testa netta, ruotata di [angle] gradi attorno al centro. */
+private fun cometBrush(center: Offset, angle: Float, alpha: Float): Brush = object : ShaderBrush() {
+    override fun createShader(size: Size): Shader {
+        val clear = Neon.Red.copy(alpha = 0f).toArgb()
+        val head = Neon.Red.copy(alpha = alpha).toArgb()
+        val shader = SweepGradient(
+            center.x,
+            center.y,
+            intArrayOf(clear, clear, head, clear, clear),
+            floatArrayOf(0f, 0.55f, 0.80f, 0.802f, 1f),
+        )
+        shader.setLocalMatrix(Matrix().apply { setRotate(angle, center.x, center.y) })
+        return shader
     }
 }
 
 /** Sfondo scuro con griglia sottile e aloni di colore. */
 @Composable
 fun NeonBackground(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
+    val angle by rememberInfiniteTransition(label = "frame").animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(7000, easing = LinearEasing)),
+        label = "frameAngle",
+    )
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -137,14 +167,14 @@ fun NeonBackground(modifier: Modifier = Modifier, content: @Composable BoxScope.
             .drawBehind {
                 drawRect(
                     Brush.radialGradient(
-                        listOf(Neon.Accent.copy(alpha = 0.14f), Color.Transparent),
+                        listOf(Neon.Accent.copy(alpha = 0.06f), Color.Transparent),
                         center = Offset(size.width * 0.1f, 0f),
                         radius = size.width,
                     ),
                 )
                 drawRect(
                     Brush.radialGradient(
-                        listOf(Neon.Accent2.copy(alpha = 0.16f), Color.Transparent),
+                        listOf(Neon.Accent2.copy(alpha = 0.08f), Color.Transparent),
                         center = Offset(size.width * 0.95f, size.height * 0.95f),
                         radius = size.width * 1.1f,
                     ),
@@ -161,6 +191,43 @@ fun NeonBackground(modifier: Modifier = Modifier, content: @Composable BoxScope.
                     drawLine(line, Offset(0f, y), Offset(size.width, y), strokeWidth = 1f)
                     y += step
                 }
+
+                // Cornice dell'app: filo grigio chiaro sfumato, con una cometa rossa che la percorre
+                val inset = 3.dp.toPx()
+                val frameTopLeft = Offset(inset, inset)
+                val frameSize = Size(size.width - 2 * inset, size.height - 2 * inset)
+                val frameRadius = CornerRadius(24.dp.toPx())
+                drawRoundRect(
+                    brush = Brush.linearGradient(
+                        listOf(
+                            Neon.Accent.copy(alpha = 0.60f),
+                            Neon.Accent.copy(alpha = 0.10f),
+                            Neon.Accent.copy(alpha = 0.42f),
+                            Neon.Accent.copy(alpha = 0.12f),
+                        ),
+                        start = Offset.Zero,
+                        end = Offset(size.width, size.height),
+                    ),
+                    topLeft = frameTopLeft,
+                    size = frameSize,
+                    cornerRadius = frameRadius,
+                    style = Stroke(1.5.dp.toPx()),
+                )
+                val center = Offset(size.width / 2f, size.height / 2f)
+                drawRoundRect(
+                    brush = cometBrush(center, angle, 0.30f),
+                    topLeft = frameTopLeft,
+                    size = frameSize,
+                    cornerRadius = frameRadius,
+                    style = Stroke(7.dp.toPx()),
+                )
+                drawRoundRect(
+                    brush = cometBrush(center, angle, 1f),
+                    topLeft = frameTopLeft,
+                    size = frameSize,
+                    cornerRadius = frameRadius,
+                    style = Stroke(2.5.dp.toPx()),
+                )
             },
         content = content,
     )
@@ -179,7 +246,7 @@ fun GlassCard(
             .fillMaxWidth()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF21090F).copy(alpha = 0.92f), Color(0xFF160A0E).copy(alpha = 0.92f)),
+                    listOf(Color(0xFF1C1D22).copy(alpha = 0.92f), Color(0xFF131418).copy(alpha = 0.92f)),
                 ),
                 shape,
             )
@@ -226,14 +293,14 @@ fun Neon3D(
     val shape = RoundedCornerShape(14.dp)
 
     val slab = when {
-        !enabled -> Color(0xFF0D0608)
+        !enabled -> Color(0xFF0B0C0E)
         filled -> lerp(accent, Color.Black, 0.55f)
         else -> lerp(accent, Color.Black, 0.72f)
     }
     val faceBrush = when {
-        !enabled -> Brush.verticalGradient(listOf(Color(0xFF2E1218), Color(0xFF1E0B10)))
+        !enabled -> Brush.verticalGradient(listOf(Color(0xFF2A2C32), Color(0xFF191A1E)))
         filled -> Brush.verticalGradient(listOf(lerp(accent, Color.White, 0.30f), accent, lerp(accent, Color.Black, 0.22f)))
-        else -> Brush.verticalGradient(listOf(Color(0xFF40161F), Color(0xFF2A1016)))
+        else -> Brush.verticalGradient(listOf(Color(0xFF3A3D45), Color(0xFF24262C)))
     }
     val borderBrush = when {
         !enabled -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent))
@@ -242,7 +309,7 @@ fun Neon3D(
     }
     val contentColor = when {
         !enabled -> Neon.TextDim
-        filled -> Color(0xFF1A0508)
+        filled -> Color(0xFF14151A)
         else -> accent
     }
 
@@ -348,7 +415,7 @@ fun NeonToggle(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color(0xFF0E0507), shape)
+            .background(Color(0xFF0B0C0E), shape)
             .border(1.dp, Neon.Outline, shape)
             .padding(5.dp),
     ) {
@@ -372,7 +439,7 @@ fun NeonToggle(
             options.forEachIndexed { index, label ->
                 val selected = index == selectedIndex
                 val textColor by animateColorAsState(
-                    if (selected) Color(0xFF1A0508) else Neon.TextDim,
+                    if (selected) Color(0xFF14151A) else Neon.TextDim,
                     label = "toggleText",
                 )
                 Box(
@@ -452,7 +519,7 @@ fun LcdPercentField(
                 val radius = 26.dp.toPx()
                 // Spessore della lastra, per l'effetto 3D
                 drawRoundRect(
-                    color = Color(0xFF2A0509),
+                    color = Color(0xFF1A1B1F),
                     topLeft = Offset(0f, 9.dp.toPx()),
                     size = size,
                     cornerRadius = CornerRadius(radius),
@@ -469,7 +536,7 @@ fun LcdPercentField(
                     )
                 }
             }
-            .background(Brush.verticalGradient(listOf(Color(0xFF2E0F16), Color(0xFF12060A))), shape)
+            .background(Brush.verticalGradient(listOf(Color(0xFF2A2C33), Color(0xFF0F1013))), shape)
             .border(
                 2.dp,
                 Brush.linearGradient(

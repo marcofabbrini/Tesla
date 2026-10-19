@@ -36,8 +36,8 @@ La capacità è una stima: Tesla non pubblica ufficialmente il dato, quindi è m
 
 ## Aspetto
 
-Interfaccia futuristica a tema scuro con accento rosso. L'auto è l'immagine di sfondo della schermata principale
-(sostituibile dalle impostazioni). Il titolo è nel font TESLA, rosso con un leggero bagliore e adattato alla larghezza
+Interfaccia futuristica a tema scuro con accento grigio chiaro. L'auto è l'immagine di sfondo della schermata principale
+(sostituibile dalle impostazioni). Solo il titolo è rosso, nel font TESLA, con un leggero bagliore e adattato alla larghezza
 dello schermo; tutto il testo usa Exo 2. I pulsanti sono icone con leggero effetto 3D (faccia sfumata, spessore,
 abbassamento al tocco) e il selettore casa/colonnina ha un cursore che scorre da un lato all'altro. I punti percentuale
 sono mostrati in una casella 3D con alone luminoso, con font LCD a 7 segmenti e segmenti spenti sullo sfondo.

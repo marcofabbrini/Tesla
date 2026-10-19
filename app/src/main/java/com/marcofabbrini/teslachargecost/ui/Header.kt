@@ -105,7 +105,7 @@ fun HeaderImage(imageUri: String?, modifier: Modifier = Modifier) {
             .fillMaxWidth()
             .height(150.dp)
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(Color(0xFF220A10), Color(0xFF0C0507))))
+            .background(Brush.verticalGradient(listOf(Color(0xFF1B1C21), Color(0xFF0A0B0D))))
             .border(
                 1.dp,
                 Brush.linearGradient(listOf(Neon.Accent.copy(alpha = 0.65f), Neon.Accent2.copy(alpha = 0.25f))),
