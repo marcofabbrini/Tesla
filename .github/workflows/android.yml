@@ -58,8 +58,11 @@ jobs:
         run: |
           cp app/build/outputs/apk/release/app-release.apk TeslaChargeCost.apk
           gh release delete latest --yes --cleanup-tag || true
+          sleep 5
           gh release create latest TeslaChargeCost.apk \
             --target "${{ github.sha }}" \
             --title "Tesla Charge Cost (ultima build ${{ github.run_number }})" \
             --notes "APK installabile su Android. Scaricalo dal telefono e abilita l'installazione da fonti sconosciute. Si aggiorna sovrapponendolo alla versione già installata." \
             --latest
+          # In rari casi la Release resta in bozza: la si pubblica comunque
+          gh release edit latest --draft=false --latest
