@@ -11,6 +11,14 @@ object TripCalculator {
     /** Risultato per la colonnina pubblica: kWh consumati, €/kWh effettivo e €/punto percentuale. */
     data class PublicResult(val kwh: Double, val costPerKwh: Double, val costPerPercent: Double)
 
+    /** Consumo medio e costo riferiti alla distanza percorsa. */
+    data class TripStats(
+        val whPerKm: Double,
+        val kwhPer100Km: Double,
+        val costPerKm: Double,
+        val costPer100Km: Double,
+    )
+
     /** kWh corrispondenti ai punti percentuale di batteria consumati. */
     fun kwhFromPercent(percent: Double, capacityKwh: Double): Double =
         percent / 100.0 * capacityKwh
@@ -32,6 +40,20 @@ object TripCalculator {
             kwh = kwh,
             costPerKwh = amountPaid / kwh,
             costPerPercent = amountPaid / percent,
+        )
+    }
+
+    /**
+     * Consumo medio e costo al km a partire da energia consumata, costo del viaggio e km percorsi.
+     * Restituisce null se i km non sono positivi.
+     */
+    fun stats(kwh: Double, cost: Double, km: Double): TripStats? {
+        if (km <= 0.0) return null
+        return TripStats(
+            whPerKm = kwh * 1000.0 / km,
+            kwhPer100Km = kwh * 100.0 / km,
+            costPerKm = cost / km,
+            costPer100Km = cost * 100.0 / km,
         )
     }
 }

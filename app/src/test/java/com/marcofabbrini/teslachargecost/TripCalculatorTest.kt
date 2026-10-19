@@ -33,4 +33,20 @@ class TripCalculatorTest {
     fun publicCharger_zeroPercentIsNotComputable() {
         assertNull(TripCalculator.publicCharger(percent = 0.0, capacityKwh = 60.5, amountPaid = 5.0))
     }
+
+    @Test
+    fun stats_computesConsumptionAndCostPerDistance() {
+        val stats = TripCalculator.stats(kwh = 12.1, cost = 3.025, km = 80.0)
+        assertNotNull(stats)
+        assertEquals(151.25, stats!!.whPerKm, 1e-9)
+        assertEquals(15.125, stats.kwhPer100Km, 1e-9)
+        assertEquals(0.0378125, stats.costPerKm, 1e-9)
+        assertEquals(3.78125, stats.costPer100Km, 1e-9)
+    }
+
+    @Test
+    fun stats_nonPositiveKmIsNotComputable() {
+        assertNull(TripCalculator.stats(kwh = 12.1, cost = 3.025, km = 0.0))
+        assertNull(TripCalculator.stats(kwh = 12.1, cost = 3.025, km = -5.0))
+    }
 }
