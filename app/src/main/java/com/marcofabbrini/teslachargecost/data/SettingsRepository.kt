@@ -16,6 +16,7 @@ data class Settings(
     val homeTariff: Double = DEFAULT_HOME_TARIFF,
     val batteryCapacityKwh: Double = DEFAULT_BATTERY_KWH,
     val headerImageUri: String? = null,
+    val appFont: String = "exo2",
 )
 
 private val Context.dataStore by preferencesDataStore(name = "settings")
@@ -26,6 +27,7 @@ class SettingsRepository(private val context: Context) {
         val TARIFF = doublePreferencesKey("home_tariff")
         val CAPACITY = doublePreferencesKey("battery_capacity_kwh")
         val HEADER_URI = stringPreferencesKey("header_image_uri")
+        val APP_FONT = stringPreferencesKey("app_font")
     }
 
     val settings: Flow<Settings> = context.dataStore.data.map { it.toSettings() }
@@ -43,6 +45,10 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
+    suspend fun setAppFont(key: String) {
+        context.dataStore.edit { it[Keys.APP_FONT] = key }
+    }
+
     suspend fun resetValues() {
         context.dataStore.edit {
             it.remove(Keys.TARIFF)
@@ -54,5 +60,6 @@ class SettingsRepository(private val context: Context) {
         homeTariff = this[Keys.TARIFF] ?: DEFAULT_HOME_TARIFF,
         batteryCapacityKwh = this[Keys.CAPACITY] ?: DEFAULT_BATTERY_KWH,
         headerImageUri = this[Keys.HEADER_URI],
+        appFont = this[Keys.APP_FONT] ?: "exo2",
     )
 }

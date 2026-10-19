@@ -14,6 +14,7 @@ import com.marcofabbrini.teslachargecost.data.Settings
 import com.marcofabbrini.teslachargecost.data.SettingsRepository
 import com.marcofabbrini.teslachargecost.data.TripRecord
 import com.marcofabbrini.teslachargecost.data.TripRepository
+import com.marcofabbrini.teslachargecost.ui.AppFont
 import com.marcofabbrini.teslachargecost.ui.HistoryScreen
 import com.marcofabbrini.teslachargecost.ui.HomeScreen
 import com.marcofabbrini.teslachargecost.ui.SettingsScreen
@@ -29,9 +30,9 @@ class MainActivity : ComponentActivity() {
         val tripRepository = TripRepository(applicationContext)
 
         setContent {
-            TeslaChargeCostTheme {
+            val settings by settingsRepository.settings.collectAsState(initial = Settings())
+            TeslaChargeCostTheme(appFont = AppFont.fromKey(settings.appFont).family) {
                 val scope = rememberCoroutineScope()
-                val settings by settingsRepository.settings.collectAsState(initial = Settings())
                 val trips by tripRepository.records.collectAsState(initial = emptyList<TripRecord>())
                 var screen by rememberSaveable { mutableStateOf(Screen.HOME) }
 
@@ -54,6 +55,7 @@ class MainActivity : ComponentActivity() {
                         onHeaderImageChanged = { uri ->
                             scope.launch { settingsRepository.setHeaderImage(uri) }
                         },
+                        onFontChanged = { key -> scope.launch { settingsRepository.setAppFont(key) } },
                         onBack = { screen = Screen.HOME },
                     )
 

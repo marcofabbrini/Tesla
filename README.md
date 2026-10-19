@@ -1,4 +1,4 @@
-# Tesla Charge Cost
+# Tesla Charge Cost (titolo nell'app: Tesla Stats)
 
 App Android nativa (Kotlin + Jetpack Compose) che calcola quanto è costato un viaggio in
 Tesla Model 3 Standard a partire dai punti percentuale di batteria consumati.
@@ -44,6 +44,7 @@ sono mostrati in una casella 3D con alone luminoso, con font LCD a 7 segmenti e 
 
 ## Crediti
 
+- Font **Orbitron** (Matt McInerney) e **Rajdhani** (Indian Type Foundry), licenza SIL OFL 1.1 (`licenses/Orbitron-OFL.txt`, `licenses/Rajdhani-OFL.txt`).
 - Font **Exo 2** (Natanael Gama), licenza SIL Open Font License 1.1 (vedi `licenses/Exo2-OFL.txt`).
 - Font del titolo **TESLA**, licenza Creative Commons BY-NC-SA: solo uso non commerciale.
 - Font LCD **DSEG7 Classic** di keshikan, licenza SIL Open Font License 1.1 (vedi `licenses/DSEG-LICENSE.txt`).

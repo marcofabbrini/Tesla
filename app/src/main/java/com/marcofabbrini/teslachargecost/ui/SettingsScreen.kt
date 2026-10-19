@@ -3,7 +3,13 @@ package com.marcofabbrini.teslachargecost.ui
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,6 +44,7 @@ fun SettingsScreen(
     onSaveValues: (tariff: Double, capacityKwh: Double) -> Unit,
     onResetValues: () -> Unit,
     onHeaderImageChanged: (String?) -> Unit,
+    onFontChanged: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -109,6 +116,22 @@ fun SettingsScreen(
                 }
             }
 
+            GlassCard {
+                NeonLabel("Font dell'applicazione")
+                Column(
+                    modifier = Modifier.padding(top = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    AppFont.values().forEach { font ->
+                        FontOption(
+                            font = font,
+                            selected = font.key == settings.appFont,
+                            onClick = { onFontChanged(font.key) },
+                        )
+                    }
+                }
+            }
+
             GlassCard(glow = Neon.Accent2) {
                 NeonLabel("Parametri")
 
@@ -167,6 +190,34 @@ fun SettingsScreen(
                     fontSize = 12.sp,
                 )
             }
+        }
+    }
+}
+
+/** Riga di scelta del font, scritta con il font stesso. */
+@Composable
+private fun FontOption(font: AppFont, selected: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(if (selected) Color(0xFF2A2C33) else Color.Transparent, shape)
+            .border(1.dp, if (selected) Neon.Accent.copy(alpha = 0.85f) else Neon.Outline, shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            font.label,
+            fontFamily = font.family,
+            color = if (selected) Color.White else Neon.TextDim,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Medium,
+        )
+        if (selected) {
+            Icon(NeonIcons.Check, contentDescription = "Selezionato", modifier = Modifier.size(20.dp), tint = Neon.Accent)
         }
     }
 }

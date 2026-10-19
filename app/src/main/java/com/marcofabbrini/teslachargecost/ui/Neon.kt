@@ -1,12 +1,16 @@
 package com.marcofabbrini.teslachargecost.ui
 
-import android.graphics.Matrix
-import android.graphics.SweepGradient
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.ui.graphics.Shader
-import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import kotlin.math.PI
+import kotlin.math.sin
+import kotlin.random.Random
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -135,68 +139,128 @@ fun NeonTitle(text: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** Pennello a cometa rossa: una coda che sfuma e una testa netta, ruotata di [angle] gradi attorno al centro. */
-private fun cometBrush(center: Offset, angle: Float, alpha: Float): Brush = object : ShaderBrush() {
-    override fun createShader(size: Size): Shader {
-        val clear = Neon.Red.copy(alpha = 0f).toArgb()
-        val head = Neon.Red.copy(alpha = alpha).toArgb()
-        val shader = SweepGradient(
-            center.x,
-            center.y,
-            intArrayOf(clear, clear, head, clear, clear),
-            floatArrayOf(0f, 0.55f, 0.80f, 0.802f, 1f),
-        )
-        shader.setLocalMatrix(Matrix().apply { setRotate(angle, center.x, center.y) })
-        return shader
+private class Puff(random: Random) {
+    val period = 14f + random.nextFloat() * 14f
+    val offset = random.nextFloat()
+    val baseX = random.nextFloat()
+    val sway = 0.03f + random.nextFloat() * 0.06f
+    val swayFreq = 0.25f + random.nextFloat() * 0.5f
+    val swayPhase = random.nextFloat() * 6.28f
+    val wobble = 0.01f + random.nextFloat() * 0.03f
+    val wobbleFreq = 0.9f + random.nextFloat() * 1.3f
+    val drift = (random.nextFloat() - 0.5f) * 0.25f
+    val sizeDp = 70f + random.nextFloat() * 90f
+}
+
+/** Circuiti stampati e chip appena percettibili: tracce a 45°, piazzole e qualche componente. */
+private fun DrawScope.drawCircuits() {
+    val random = Random(7)
+    val cell = 26.dp.toPx()
+    val cols = (size.width / cell).toInt().coerceAtLeast(1)
+    val rows = (size.height / cell).toInt().coerceAtLeast(1)
+    val trace = Neon.Accent.copy(alpha = 0.055f)
+    val stroke = 1.2.dp.toPx()
+    val dx = intArrayOf(1, 1, 0, -1, -1, -1, 0, 1)
+    val dy = intArrayOf(0, 1, 1, 1, 0, -1, -1, -1)
+
+    repeat(28) {
+        var cx = random.nextInt(cols + 1)
+        var cy = random.nextInt(rows + 1)
+        var prev = Offset(cx * cell, cy * cell)
+        drawCircle(trace, 3.dp.toPx(), prev, style = Stroke(stroke))
+        repeat(3 + random.nextInt(3)) {
+            val len = 2 + random.nextInt(5)
+            val dir = random.nextInt(8)
+            cx = (cx + dx[dir] * len).coerceIn(0, cols)
+            cy = (cy + dy[dir] * len).coerceIn(0, rows)
+            val next = Offset(cx * cell, cy * cell)
+            drawLine(trace, prev, next, stroke)
+            prev = next
+        }
+        drawCircle(trace, 3.dp.toPx(), prev, style = Stroke(stroke))
+    }
+
+    val chip = Neon.Accent.copy(alpha = 0.065f)
+    repeat(6) {
+        val w = (3 + random.nextInt(3)) * cell
+        val h = (2 + random.nextInt(3)) * cell
+        val left = random.nextFloat() * (size.width - w).coerceAtLeast(1f)
+        val top = random.nextFloat() * (size.height - h).coerceAtLeast(1f)
+        drawRoundRect(chip, Offset(left, top), Size(w, h), CornerRadius(4.dp.toPx()), style = Stroke(stroke))
+        drawRect(chip, Offset(left + w * 0.3f, top + h * 0.3f), Size(w * 0.4f, h * 0.4f), style = Stroke(stroke))
+        val pin = 10.dp.toPx()
+        val len = 6.dp.toPx()
+        var x = left + pin
+        while (x < left + w - pin / 2) {
+            drawLine(chip, Offset(x, top), Offset(x, top - len), stroke)
+            drawLine(chip, Offset(x, top + h), Offset(x, top + h + len), stroke)
+            x += pin
+        }
+        var y = top + pin
+        while (y < top + h - pin / 2) {
+            drawLine(chip, Offset(left, y), Offset(left - len, y), stroke)
+            drawLine(chip, Offset(left + w, y), Offset(left + w + len, y), stroke)
+            y += pin
+        }
     }
 }
 
-/** Sfondo scuro con griglia sottile e aloni di colore. */
+/** Fumo: macchie morbide che salgono dal basso con un movimento irregolare, sempre sullo sfondo. */
 @Composable
-fun NeonBackground(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
-    val angle by rememberInfiniteTransition(label = "frame").animateFloat(
+private fun SmokeLayer() {
+    val puffs = remember { Random(11).let { r -> List(16) { Puff(r) } } }
+    var time by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(Unit) {
+        val start = withFrameNanos { it }
+        while (true) {
+            withFrameNanos { time = (it - start) / 1_000_000_000f }
+        }
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .drawBehind {
+                val t = time
+                puffs.forEach { p ->
+                    val progress = (t / p.period + p.offset) % 1f
+                    val y = size.height * (1.08f - progress * 0.8f)
+                    val x = size.width * (
+                        p.baseX + p.drift * progress +
+                            p.sway * sin(t * p.swayFreq + p.swayPhase) +
+                            p.wobble * sin(t * p.wobbleFreq * 2.3f + p.swayPhase * 1.7f)
+                        )
+                    val radius = (p.sizeDp * (0.6f + progress * 1.2f)).dp.toPx()
+                    val alpha = 0.10f * sin(PI.toFloat() * progress)
+                    val center = Offset(x, y)
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            listOf(Neon.Accent.copy(alpha = alpha), Color.Transparent),
+                            center = center,
+                            radius = radius,
+                        ),
+                        radius = radius,
+                        center = center,
+                    )
+                }
+            },
+    )
+}
+
+/** Cornice dell'app: filo grigio chiaro sfumato, con una cometa rossa che scorre sul solo lato sinistro. */
+@Composable
+private fun FrameLayer() {
+    val t by rememberInfiniteTransition(label = "frame").animateFloat(
         initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(7000, easing = LinearEasing)),
-        label = "frameAngle",
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(4200, easing = LinearEasing)),
+        label = "comet",
     )
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Neon.BgTop, Neon.BgBottom)))
             .drawBehind {
-                drawRect(
-                    Brush.radialGradient(
-                        listOf(Neon.Accent.copy(alpha = 0.06f), Color.Transparent),
-                        center = Offset(size.width * 0.1f, 0f),
-                        radius = size.width,
-                    ),
-                )
-                drawRect(
-                    Brush.radialGradient(
-                        listOf(Neon.Accent2.copy(alpha = 0.08f), Color.Transparent),
-                        center = Offset(size.width * 0.95f, size.height * 0.95f),
-                        radius = size.width * 1.1f,
-                    ),
-                )
-                val step = 32.dp.toPx()
-                val line = Neon.Accent.copy(alpha = 0.04f)
-                var x = 0f
-                while (x < size.width) {
-                    drawLine(line, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1f)
-                    x += step
-                }
-                var y = 0f
-                while (y < size.height) {
-                    drawLine(line, Offset(0f, y), Offset(size.width, y), strokeWidth = 1f)
-                    y += step
-                }
-
-                // Cornice dell'app: filo grigio chiaro sfumato, con una cometa rossa che la percorre
                 val inset = 3.dp.toPx()
-                val frameTopLeft = Offset(inset, inset)
-                val frameSize = Size(size.width - 2 * inset, size.height - 2 * inset)
-                val frameRadius = CornerRadius(24.dp.toPx())
+                val radius = 24.dp.toPx()
                 drawRoundRect(
                     brush = Brush.linearGradient(
                         listOf(
@@ -208,29 +272,81 @@ fun NeonBackground(modifier: Modifier = Modifier, content: @Composable BoxScope.
                         start = Offset.Zero,
                         end = Offset(size.width, size.height),
                     ),
-                    topLeft = frameTopLeft,
-                    size = frameSize,
-                    cornerRadius = frameRadius,
+                    topLeft = Offset(inset, inset),
+                    size = Size(size.width - 2 * inset, size.height - 2 * inset),
+                    cornerRadius = CornerRadius(radius),
                     style = Stroke(1.5.dp.toPx()),
                 )
-                val center = Offset(size.width / 2f, size.height / 2f)
-                drawRoundRect(
-                    brush = cometBrush(center, angle, 0.30f),
-                    topLeft = frameTopLeft,
-                    size = frameSize,
-                    cornerRadius = frameRadius,
-                    style = Stroke(7.dp.toPx()),
-                )
-                drawRoundRect(
-                    brush = cometBrush(center, angle, 1f),
-                    topLeft = frameTopLeft,
-                    size = frameSize,
-                    cornerRadius = frameRadius,
-                    style = Stroke(2.5.dp.toPx()),
-                )
+                // Cometa: scende lungo il lato sinistro, tra le due curve degli angoli
+                val yMin = inset + radius
+                val yMax = size.height - inset - radius
+                val tail = size.height * 0.3f
+                val head = t * (size.height + tail)
+                val y0 = (head - tail).coerceIn(yMin, yMax)
+                val y1 = head.coerceIn(yMin, yMax)
+                if (y1 > y0) {
+                    for ((width, alpha) in listOf(7.dp.toPx() to 0.30f, 2.5.dp.toPx() to 1f)) {
+                        drawLine(
+                            brush = Brush.verticalGradient(
+                                listOf(Neon.Red.copy(alpha = 0f), Neon.Red.copy(alpha = alpha)),
+                                startY = head - tail,
+                                endY = head,
+                            ),
+                            start = Offset(inset, y0),
+                            end = Offset(inset, y1),
+                            strokeWidth = width,
+                        )
+                    }
+                }
             },
-        content = content,
     )
+}
+
+/** Sfondo scuro a strati: griglia e aloni, circuiti, fumo e cornice animata. */
+@Composable
+fun NeonBackground(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(listOf(Neon.BgTop, Neon.BgBottom))),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .drawBehind {
+                    drawRect(
+                        Brush.radialGradient(
+                            listOf(Neon.Accent.copy(alpha = 0.06f), Color.Transparent),
+                            center = Offset(size.width * 0.1f, 0f),
+                            radius = size.width,
+                        ),
+                    )
+                    drawRect(
+                        Brush.radialGradient(
+                            listOf(Neon.Accent2.copy(alpha = 0.08f), Color.Transparent),
+                            center = Offset(size.width * 0.95f, size.height * 0.95f),
+                            radius = size.width * 1.1f,
+                        ),
+                    )
+                    val step = 32.dp.toPx()
+                    val line = Neon.Accent.copy(alpha = 0.03f)
+                    var x = 0f
+                    while (x < size.width) {
+                        drawLine(line, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1f)
+                        x += step
+                    }
+                    var y = 0f
+                    while (y < size.height) {
+                        drawLine(line, Offset(0f, y), Offset(size.width, y), strokeWidth = 1f)
+                        y += step
+                    }
+                },
+        )
+        Box(modifier = Modifier.fillMaxSize().drawBehind { drawCircuits() })
+        SmokeLayer()
+        FrameLayer()
+        content()
+    }
 }
 
 /** Pannello in vetro scuro con bordo sfumato al neon. */
@@ -537,13 +653,6 @@ fun LcdPercentField(
                 }
             }
             .background(Brush.verticalGradient(listOf(Color(0xFF2A2C33), Color(0xFF0F1013))), shape)
-            .border(
-                2.dp,
-                Brush.linearGradient(
-                    listOf(Color.White.copy(alpha = 0.55f), accent.copy(alpha = 0.9f), accent.copy(alpha = 0.15f)),
-                ),
-                shape,
-            )
             .drawBehind {
                 val radius = CornerRadius(26.dp.toPx())
                 // Riflesso del vetro sulla metà superiore

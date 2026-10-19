@@ -5,6 +5,8 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import com.marcofabbrini.teslachargecost.ui.ExoFamily
@@ -27,33 +29,33 @@ private val NeonColors = darkColorScheme(
     error = Neon.Warn,
 )
 
-private val ExoTypography = Typography().let { t ->
+private fun typographyFor(family: FontFamily): Typography = Typography().let { t ->
     t.copy(
-        displayLarge = t.displayLarge.copy(fontFamily = ExoFamily),
-        displayMedium = t.displayMedium.copy(fontFamily = ExoFamily),
-        displaySmall = t.displaySmall.copy(fontFamily = ExoFamily),
-        headlineLarge = t.headlineLarge.copy(fontFamily = ExoFamily),
-        headlineMedium = t.headlineMedium.copy(fontFamily = ExoFamily),
-        headlineSmall = t.headlineSmall.copy(fontFamily = ExoFamily),
-        titleLarge = t.titleLarge.copy(fontFamily = ExoFamily),
-        titleMedium = t.titleMedium.copy(fontFamily = ExoFamily),
-        titleSmall = t.titleSmall.copy(fontFamily = ExoFamily),
-        bodyLarge = t.bodyLarge.copy(fontFamily = ExoFamily),
-        bodyMedium = t.bodyMedium.copy(fontFamily = ExoFamily),
-        bodySmall = t.bodySmall.copy(fontFamily = ExoFamily),
-        labelLarge = t.labelLarge.copy(fontFamily = ExoFamily),
-        labelMedium = t.labelMedium.copy(fontFamily = ExoFamily),
-        labelSmall = t.labelSmall.copy(fontFamily = ExoFamily),
+        displayLarge = t.displayLarge.copy(fontFamily = family),
+        displayMedium = t.displayMedium.copy(fontFamily = family),
+        displaySmall = t.displaySmall.copy(fontFamily = family),
+        headlineLarge = t.headlineLarge.copy(fontFamily = family),
+        headlineMedium = t.headlineMedium.copy(fontFamily = family),
+        headlineSmall = t.headlineSmall.copy(fontFamily = family),
+        titleLarge = t.titleLarge.copy(fontFamily = family),
+        titleMedium = t.titleMedium.copy(fontFamily = family),
+        titleSmall = t.titleSmall.copy(fontFamily = family),
+        bodyLarge = t.bodyLarge.copy(fontFamily = family),
+        bodyMedium = t.bodyMedium.copy(fontFamily = family),
+        bodySmall = t.bodySmall.copy(fontFamily = family),
+        labelLarge = t.labelLarge.copy(fontFamily = family),
+        labelMedium = t.labelMedium.copy(fontFamily = family),
+        labelSmall = t.labelSmall.copy(fontFamily = family),
     )
 }
 
 @Composable
-fun TeslaChargeCostTheme(content: @Composable () -> Unit) {
+fun TeslaChargeCostTheme(appFont: FontFamily = ExoFamily, content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = NeonColors,
-        typography = ExoTypography,
+        typography = remember(appFont) { typographyFor(appFont) },
     ) {
         // Senza una Surface il testo non erediterebbe il font: lo si imposta qui per tutta l'app
-        ProvideTextStyle(TextStyle(fontFamily = ExoFamily), content = content)
+        ProvideTextStyle(TextStyle(fontFamily = appFont), content = content)
     }
 }
