@@ -3,6 +3,7 @@ package com.marcofabbrini.teslachargecost.ui
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,30 +11,31 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.marcofabbrini.teslachargecost.data.DEFAULT_BATTERY_KWH
 import com.marcofabbrini.teslachargecost.data.DEFAULT_HOME_TARIFF
 import com.marcofabbrini.teslachargecost.data.Settings
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     settings: Settings,
@@ -65,74 +67,131 @@ fun SettingsScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Impostazioni") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("Indietro") } },
-            )
-        },
-    ) { padding ->
+    val buttonShape = RoundedCornerShape(14.dp)
+    val filledColors = ButtonDefaults.buttonColors(
+        containerColor = Neon.Cyan,
+        contentColor = Color(0xFF00252B),
+        disabledContainerColor = Color(0xFF16263F),
+        disabledContentColor = Neon.TextDim,
+    )
+    val outlinedColors = ButtonDefaults.outlinedButtonColors(
+        contentColor = Neon.Cyan,
+        disabledContentColor = Neon.TextDim,
+    )
+    val outlineBorder = BorderStroke(1.dp, Neon.Cyan.copy(alpha = 0.6f))
+
+    NeonBackground {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "IMPOSTAZIONI",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 3.sp,
+                )
+                NeonTextButton("Indietro", onBack)
+            }
+
             HeaderImage(imageUri = settings.headerImageUri)
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { imagePicker.launch(arrayOf("image/*")) }) {
-                    Text("Scegli immagine")
-                }
-                OutlinedButton(
-                    onClick = { onHeaderImageChanged(null) },
-                    enabled = settings.headerImageUri != null,
+            GlassCard {
+                NeonLabel("Immagine di intestazione")
+                Row(
+                    modifier = Modifier.padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("Rimuovi")
+                    Button(
+                        onClick = { imagePicker.launch(arrayOf("image/*")) },
+                        shape = buttonShape,
+                        colors = filledColors,
+                    ) {
+                        Text("Scegli immagine")
+                    }
+                    OutlinedButton(
+                        onClick = { onHeaderImageChanged(null) },
+                        enabled = settings.headerImageUri != null,
+                        shape = buttonShape,
+                        colors = outlinedColors,
+                        border = outlineBorder,
+                    ) {
+                        Text("Ripristina")
+                    }
                 }
             }
 
-            OutlinedTextField(
-                value = tariffText,
-                onValueChange = { tariffText = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Tariffa ricarica a casa") },
-                suffix = { Text("€/kWh") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                isError = tariff == null,
-            )
+            GlassCard(glow = Neon.Violet) {
+                NeonLabel("Parametri")
 
-            OutlinedTextField(
-                value = capacityText,
-                onValueChange = { capacityText = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Capacità utile della batteria") },
-                suffix = { Text("kWh") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                isError = capacity == null,
-            )
+                OutlinedTextField(
+                    value = tariffText,
+                    onValueChange = { tariffText = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = neonFieldColors(),
+                    label = { Text("Tariffa ricarica a casa") },
+                    suffix = { Text("€/kWh") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    isError = tariff == null,
+                )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = { onSaveValues(tariff!!, capacity!!) },
-                    enabled = tariff != null && capacity != null,
+                OutlinedTextField(
+                    value = capacityText,
+                    onValueChange = { capacityText = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = neonFieldColors(),
+                    label = { Text("Capacità utile della batteria") },
+                    suffix = { Text("kWh") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    isError = capacity == null,
+                )
+
+                Row(
+                    modifier = Modifier.padding(top = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("Salva")
+                    Button(
+                        onClick = { onSaveValues(tariff!!, capacity!!) },
+                        enabled = tariff != null && capacity != null,
+                        shape = buttonShape,
+                        colors = filledColors,
+                    ) {
+                        Text("Salva")
+                    }
+                    OutlinedButton(
+                        onClick = onResetValues,
+                        shape = buttonShape,
+                        colors = outlinedColors,
+                        border = outlineBorder,
+                    ) {
+                        Text("Predefiniti")
+                    }
                 }
-                OutlinedButton(onClick = onResetValues) {
-                    Text("Ripristina predefiniti")
-                }
-            }
 
-            Text(
-                "Predefiniti: ${formatInput(DEFAULT_HOME_TARIFF)} €/kWh e ${formatInput(DEFAULT_BATTERY_KWH)} kWh.",
-                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-            )
+                Text(
+                    "Predefiniti: ${formatInput(DEFAULT_HOME_TARIFF)} €/kWh e ${formatInput(DEFAULT_BATTERY_KWH)} kWh.",
+                    modifier = Modifier.padding(top = 10.dp),
+                    color = Neon.TextDim,
+                    fontSize = 12.sp,
+                )
+            }
         }
     }
 }

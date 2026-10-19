@@ -1,35 +1,32 @@
 package com.marcofabbrini.teslachargecost.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import com.marcofabbrini.teslachargecost.ui.Neon
 
-private val LightColors = lightColorScheme(
-    primary = Color(0xFFD32F2F),
-    onPrimary = Color.White,
-    secondary = Color(0xFF37474F),
-    background = Color(0xFFF7F7F8),
-    surface = Color.White,
-)
-
-private val DarkColors = darkColorScheme(
-    primary = Color(0xFFFF6659),
-    onPrimary = Color(0xFF1A1A1A),
-    secondary = Color(0xFFB0BEC5),
-    background = Color(0xFF121212),
-    surface = Color(0xFF1E1E1E),
+// Tema futuristico: sempre scuro, accento ciano al neon. Tipografia: font di sistema.
+private val NeonColors = darkColorScheme(
+    primary = Neon.Cyan,
+    onPrimary = Color(0xFF00252B),
+    primaryContainer = Color(0xFF0B2A3A),
+    onPrimaryContainer = Color(0xFFBDF4FF),
+    secondary = Neon.Violet,
+    background = Neon.BgBottom,
+    onBackground = Color(0xFFE6F1FF),
+    surface = Neon.Panel,
+    onSurface = Color(0xFFE6F1FF),
+    surfaceVariant = Color(0xFF111B30),
+    onSurfaceVariant = Neon.TextDim,
+    outline = Neon.Outline,
+    error = Neon.Red,
 )
 
 @Composable
-fun TeslaChargeCostTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit,
-) {
+fun TeslaChargeCostTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
+        colorScheme = NeonColors,
         content = content,
     )
 }

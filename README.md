@@ -20,9 +20,20 @@ Modificabili dall'app e salvate in locale sul dispositivo (DataStore, nessun bac
 |---|---|
 | Tariffa ricarica a casa | 0,25 €/kWh |
 | Capacità utile batteria | 60,5 kWh (Model 3 Standard) |
-| Immagine di intestazione | illustrazione generica, sostituibile con una foto a scelta |
+| Immagine di intestazione | immagine inclusa nell'app, sostituibile con una foto a scelta |
 
 La capacità è una stima: Tesla non pubblica ufficialmente il dato, quindi è modificabile.
+
+## Aspetto
+
+Interfaccia futuristica a tema scuro. Il testo usa il font di sistema; i punti percentuale sono mostrati
+in una casella 3D con alone luminoso, con font LCD a 7 segmenti e segmenti spenti sullo sfondo.
+
+## Crediti
+
+- Font LCD **DSEG7 Classic** di keshikan, licenza SIL Open Font License 1.1 (vedi `licenses/DSEG-LICENSE.txt`).
+- L'immagine di intestazione è stata fornita dall'autore dell'app. Se non è tua, sostituiscila prima di
+  rendere pubblico il repository.
 
 ## Build
 
@@ -42,7 +53,7 @@ Il workflow `.github/workflows/android.yml` compila e testa a ogni push e carica
 app/src/main/java/com/marcofabbrini/teslachargecost/
 ├── MainActivity.kt
 ├── data/   TripCalculator.kt, SettingsRepository.kt
-└── ui/     HomeScreen.kt, SettingsScreen.kt, Header.kt, theme/
+└── ui/     HomeScreen.kt, SettingsScreen.kt, Header.kt, Neon.kt, theme/
 ```
 
 ## Idee future
