@@ -152,7 +152,11 @@ private fun TripCard(record: TripRecord, onDelete: () -> Unit) {
         Line("Batteria consumata", "${percentText(record.percent)}% · ${fmt2(record.kwh)} kWh")
         Line(
             if (record.mode == ChargeMode.HOME) "Tariffa casa" else "Prezzo alla colonnina",
-            "${fmt2(record.costPerKwh)} €/kWh",
+            if (record.mode == ChargeMode.HOME && record.costPerKwh == 0.0) {
+                "Accumulatore (gratis)"
+            } else {
+                "${fmt2(record.costPerKwh)} €/kWh"
+            },
         )
         record.km?.takeIf { it > 0.0 }?.let { km ->
             Line("Percorso", "${fmt1(km)} km")

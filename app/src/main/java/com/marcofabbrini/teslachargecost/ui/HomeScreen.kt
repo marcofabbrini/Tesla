@@ -1,6 +1,8 @@
 package com.marcofabbrini.teslachargecost.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +16,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -55,6 +58,8 @@ fun HomeScreen(
     var percentText by rememberSaveable { mutableStateOf("") }
     var paidText by rememberSaveable { mutableStateOf("") }
     var kmText by rememberSaveable { mutableStateOf("") }
+    // Ricarica a costo zero con l'energia dell'accumulatore: selezionata di default
+    var freeCharge by rememberSaveable { mutableStateOf(true) }
     var saved by remember { mutableStateOf(false) }
 
     // Dopo il salvataggio il pulsante resta disattivato per un attimo: evita doppi salvataggi involontari
@@ -70,6 +75,8 @@ fun HomeScreen(
     val km = kmText.toDoubleOrNullIt()?.takeIf { it > 0.0 }
     val kmInvalid = kmText.isNotBlank() && km == null
     val percentInvalid = percentText.isNotBlank() && percent == null
+    val homeFree = mode == Mode.HOME && freeCharge
+    val homeTariff = if (homeFree) 0.0 else settings.homeTariff
     val canSave = percent != null && percent > 0.0 && (mode == Mode.HOME || paid != null)
 
     NeonBackground {
@@ -99,6 +106,10 @@ fun HomeScreen(
                 selectedIndex = mode.ordinal,
                 onSelect = { mode = Mode.values()[it] },
             )
+
+            if (mode == Mode.HOME) {
+                FreeChargeCheck(checked = freeCharge, onCheckedChange = { freeCharge = it })
+            }
 
             NeonLabel("Punti percentuale consumati", Modifier.padding(start = 4.dp))
             LcdPercentField(
@@ -142,7 +153,7 @@ fun HomeScreen(
                 isError = kmInvalid,
             )
 
-            ResultCard(mode, percent, paid, km, settings)
+            ResultCard(mode, percent, paid, km, settings, homeFree)
 
             NeonIconButton(
                 icon = if (saved) NeonIcons.Check else NeonIcons.Save,
@@ -153,7 +164,7 @@ fun HomeScreen(
                             mode = if (mode == Mode.HOME) ChargeMode.HOME else ChargeMode.PUBLIC,
                             percent = p,
                             capacityKwh = settings.batteryCapacityKwh,
-                            tariffPerKwh = settings.homeTariff,
+                            tariffPerKwh = homeTariff,
                             amountPaid = paid,
                             km = km,
                             timestamp = System.currentTimeMillis(),
@@ -173,18 +184,55 @@ fun HomeScreen(
     }
 }
 
+/** Spunta: ricarica fatta interamente con l'energia dell'accumulatore, quindi a costo zero. */
 @Composable
-private fun ResultCard(mode: Mode, percent: Double?, paid: Double?, km: Double?, settings: Settings) {
+private fun FreeChargeCheck(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable { onCheckedChange(!checked) }
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = CheckboxDefaults.colors(
+                checkedColor = Neon.Accent,
+                uncheckedColor = Neon.Outline,
+                checkmarkColor = Color(0xFF1A0508),
+            ),
+        )
+        Text(
+            "Ricarica a costo zero dall'accumulatore",
+            color = if (checked) Color.White else Neon.TextDim,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+        )
+    }
+}
+
+@Composable
+private fun ResultCard(
+    mode: Mode,
+    percent: Double?,
+    paid: Double?,
+    km: Double?,
+    settings: Settings,
+    free: Boolean,
+) {
     GlassCard(glow = Neon.Accent2) {
         when {
             percent == null -> Hint("Inserisci i punti percentuale per vedere il risultato.")
 
             mode == Mode.HOME -> {
-                val r = TripCalculator.home(percent, settings.batteryCapacityKwh, settings.homeTariff)
+                val tariff = if (free) 0.0 else settings.homeTariff
+                val r = TripCalculator.home(percent, settings.batteryCapacityKwh, tariff)
                 NeonLabel("Costo del viaggio")
                 BigValue(euro(r.cost))
                 MetricRow("Energia consumata", "${num(r.kwh)} kWh")
-                MetricRow("Tariffa casa", "${num(settings.homeTariff)} €/kWh")
+                MetricRow("Tariffa casa", if (free) "Accumulatore (gratis)" else "${num(tariff)} €/kWh")
                 StatsSection(km?.let { TripCalculator.stats(r.kwh, r.cost, it) })
             }
 
