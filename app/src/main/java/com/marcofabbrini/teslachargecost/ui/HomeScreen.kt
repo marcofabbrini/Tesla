@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -72,6 +73,8 @@ fun HomeScreen(
     val canSave = percent != null && percent > 0.0 && (mode == Mode.HOME || paid != null)
 
     NeonBackground {
+        // Immagine di sfondo, fissa: le schede scorrono sopra
+        HomeBackdrop(settings.headerImageUri, Modifier.align(Alignment.TopCenter).padding(top = 60.dp))
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -82,13 +85,14 @@ fun HomeScreen(
             NeonTitle("TESLA CHARGE COST")
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
             ) {
-                NeonTextButton("Storico", onOpenHistory, Modifier.weight(1f))
-                NeonTextButton("Impostazioni", onOpenSettings, Modifier.weight(1f))
+                NeonIconButton(NeonIcons.History, "Storico", onOpenHistory)
+                NeonIconButton(NeonIcons.Settings, "Impostazioni", onOpenSettings)
             }
 
-            HeaderImage(imageUri = settings.headerImageUri)
+            // Spazio in cui si vede l'auto sullo sfondo
+            Spacer(Modifier.height(100.dp))
 
             NeonToggle(
                 options = listOf("Ricarica a casa", "Colonnina pubblica"),
@@ -106,7 +110,7 @@ fun HomeScreen(
                 Text(
                     "Inserisci un valore tra 0 e 100",
                     modifier = Modifier.padding(start = 4.dp),
-                    color = Neon.Red,
+                    color = Neon.Warn,
                     fontSize = 13.sp,
                 )
             }
@@ -140,8 +144,9 @@ fun HomeScreen(
 
             ResultCard(mode, percent, paid, km, settings)
 
-            NeonButton(
-                label = if (saved) "Salvato nello storico" else "Salva consumo",
+            NeonIconButton(
+                icon = if (saved) NeonIcons.Check else NeonIcons.Save,
+                contentDescription = if (saved) "Salvato nello storico" else "Salva consumo",
                 onClick = {
                     percent?.let { p ->
                         TripCalculator.record(
@@ -163,8 +168,6 @@ fun HomeScreen(
                     .height(60.dp),
                 enabled = canSave && !saved,
                 filled = true,
-                fontSize = 15.sp,
-                depth = 5.dp,
             )
         }
     }
@@ -172,7 +175,7 @@ fun HomeScreen(
 
 @Composable
 private fun ResultCard(mode: Mode, percent: Double?, paid: Double?, km: Double?, settings: Settings) {
-    GlassCard(glow = Neon.Violet) {
+    GlassCard(glow = Neon.Accent2) {
         when {
             percent == null -> Hint("Inserisci i punti percentuale per vedere il risultato.")
 
@@ -233,10 +236,10 @@ private fun BigValue(text: String) {
     Text(
         text,
         modifier = Modifier.padding(top = 4.dp, bottom = 10.dp),
-        color = Neon.Cyan,
+        color = Neon.Accent,
         fontSize = 44.sp,
         fontWeight = FontWeight.Bold,
-        style = TextStyle(shadow = Shadow(Neon.Cyan.copy(alpha = 0.6f), Offset.Zero, 24f)),
+        style = TextStyle(shadow = Shadow(Neon.Accent.copy(alpha = 0.6f), Offset.Zero, 24f)),
     )
 }
 

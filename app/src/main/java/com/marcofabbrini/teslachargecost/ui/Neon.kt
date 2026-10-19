@@ -1,5 +1,13 @@
 package com.marcofabbrini.teslachargecost.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -65,15 +73,14 @@ import com.marcofabbrini.teslachargecost.R
 
 /** Palette dell'interfaccia futuristica. */
 object Neon {
-    val BgTop = Color(0xFF060B16)
-    val BgBottom = Color(0xFF02040A)
-    val Panel = Color(0xFF0E1830)
-    val Cyan = Color(0xFF00E5FF)
-    val Violet = Color(0xFF7C4DFF)
-    val Red = Color(0xFFFF5370)
-    val Crimson = Color(0xFFFF2A3D)
-    val Outline = Color(0xFF1C2E4A)
-    val TextDim = Color(0xFF8FA3BF)
+    val BgTop = Color(0xFF14070B)
+    val BgBottom = Color(0xFF0A0405)
+    val Panel = Color(0xFF1C0A10)
+    val Accent = Color(0xFFFF2A3D)
+    val Accent2 = Color(0xFF9E1226)
+    val Warn = Color(0xFFFFB020)
+    val Outline = Color(0xFF4A1C26)
+    val TextDim = Color(0xFFB3A3A6)
 }
 
 /** Font LCD a 7 segmenti (DSEG, licenza SIL OFL) usato solo per il numero della percentuale. */
@@ -111,10 +118,10 @@ fun NeonTitle(text: String, modifier: Modifier = Modifier) {
             text,
             maxLines = 1,
             softWrap = false,
-            color = Neon.Crimson,
+            color = Neon.Accent,
             style = probe.copy(
                 fontSize = sizeSp.sp,
-                shadow = Shadow(Neon.Crimson.copy(alpha = 0.65f), Offset.Zero, sizeSp * 0.35f),
+                shadow = Shadow(Neon.Accent.copy(alpha = 0.65f), Offset.Zero, sizeSp * 0.35f),
             ),
         )
     }
@@ -130,20 +137,20 @@ fun NeonBackground(modifier: Modifier = Modifier, content: @Composable BoxScope.
             .drawBehind {
                 drawRect(
                     Brush.radialGradient(
-                        listOf(Neon.Cyan.copy(alpha = 0.14f), Color.Transparent),
+                        listOf(Neon.Accent.copy(alpha = 0.14f), Color.Transparent),
                         center = Offset(size.width * 0.1f, 0f),
                         radius = size.width,
                     ),
                 )
                 drawRect(
                     Brush.radialGradient(
-                        listOf(Neon.Violet.copy(alpha = 0.16f), Color.Transparent),
+                        listOf(Neon.Accent2.copy(alpha = 0.16f), Color.Transparent),
                         center = Offset(size.width * 0.95f, size.height * 0.95f),
                         radius = size.width * 1.1f,
                     ),
                 )
                 val step = 32.dp.toPx()
-                val line = Neon.Cyan.copy(alpha = 0.04f)
+                val line = Neon.Accent.copy(alpha = 0.04f)
                 var x = 0f
                 while (x < size.width) {
                     drawLine(line, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1f)
@@ -163,7 +170,7 @@ fun NeonBackground(modifier: Modifier = Modifier, content: @Composable BoxScope.
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
-    glow: Color = Neon.Cyan,
+    glow: Color = Neon.Accent,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(22.dp)
@@ -172,13 +179,13 @@ fun GlassCard(
             .fillMaxWidth()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF111B30).copy(alpha = 0.92f), Color(0xFF0A1222).copy(alpha = 0.92f)),
+                    listOf(Color(0xFF21090F).copy(alpha = 0.92f), Color(0xFF160A0E).copy(alpha = 0.92f)),
                 ),
                 shape,
             )
             .border(
                 1.dp,
-                Brush.linearGradient(listOf(glow.copy(alpha = 0.7f), Neon.Violet.copy(alpha = 0.3f))),
+                Brush.linearGradient(listOf(glow.copy(alpha = 0.7f), Neon.Accent2.copy(alpha = 0.3f))),
                 shape,
             )
             .padding(18.dp),
@@ -200,50 +207,49 @@ fun NeonLabel(text: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * Pulsante con leggero effetto 3D: faccia sfumata con bordo di luce, spessore sotto e
- * abbassamento al tocco. [filled] = pieno e colorato, altrimenti scuro con contorno luminoso.
+ * Superficie con leggero effetto 3D: faccia sfumata con bordo di luce, spessore sotto e
+ * abbassamento al tocco (se [onClick] è presente). [filled] = piena e colorata, altrimenti scura con contorno luminoso.
+ * Il contenuto riceve il colore consigliato per testo e icone.
  */
 @Composable
-fun NeonButton(
-    label: String,
-    onClick: () -> Unit,
+fun Neon3D(
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     filled: Boolean = false,
-    accent: Color = Neon.Cyan,
-    fontSize: TextUnit = 13.sp,
+    accent: Color = Neon.Accent,
     depth: Dp = 4.dp,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 11.dp),
+    content: @Composable BoxScope.(contentColor: Color) -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val shape = RoundedCornerShape(14.dp)
 
     val slab = when {
-        !enabled -> Color(0xFF080F1D)
+        !enabled -> Color(0xFF0D0608)
         filled -> lerp(accent, Color.Black, 0.55f)
         else -> lerp(accent, Color.Black, 0.72f)
     }
     val faceBrush = when {
-        !enabled -> Brush.verticalGradient(listOf(Color(0xFF1B2A45), Color(0xFF111C31)))
+        !enabled -> Brush.verticalGradient(listOf(Color(0xFF2E1218), Color(0xFF1E0B10)))
         filled -> Brush.verticalGradient(listOf(lerp(accent, Color.White, 0.30f), accent, lerp(accent, Color.Black, 0.22f)))
-        else -> Brush.verticalGradient(listOf(Color(0xFF1D2F52), Color(0xFF0F1B34)))
+        else -> Brush.verticalGradient(listOf(Color(0xFF40161F), Color(0xFF2A1016)))
     }
     val borderBrush = when {
         !enabled -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent))
         filled -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.65f), accent.copy(alpha = 0.2f)))
         else -> Brush.verticalGradient(listOf(accent.copy(alpha = 0.95f), accent.copy(alpha = 0.25f)))
     }
-    val textColor = when {
+    val contentColor = when {
         !enabled -> Neon.TextDim
-        filled -> Color(0xFF1A0508).takeIf { accent == Neon.Crimson || accent == Neon.Red } ?: Color(0xFF00252B)
+        filled -> Color(0xFF1A0508)
         else -> accent
     }
 
     Box(
         modifier = modifier
             .drawBehind {
-                // Bagliore leggero attorno ai pulsanti attivi
+                // Bagliore leggero attorno agli elementi attivi
                 if (enabled) {
                     drawRoundRect(
                         color = accent.copy(alpha = if (filled) 0.16f else 0.08f),
@@ -266,46 +272,70 @@ fun NeonButton(
         Box(
             modifier = Modifier
                 .padding(bottom = depth)
-                .offset(y = if (pressed && enabled) depth - 1.dp else 0.dp)
+                .offset(y = if (pressed && enabled && onClick != null) depth - 1.dp else 0.dp)
                 .clip(shape)
                 .background(faceBrush, shape)
                 .border(1.dp, borderBrush, shape)
-                .clickable(
-                    interactionSource = interaction,
-                    indication = null,
-                    enabled = enabled,
-                    onClick = onClick,
-                )
-                .padding(contentPadding),
+                .then(
+                    if (onClick != null) {
+                        Modifier.clickable(
+                            interactionSource = interaction,
+                            indication = null,
+                            enabled = enabled,
+                            onClick = onClick,
+                        )
+                    } else {
+                        Modifier
+                    },
+                ),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                label.uppercase(),
-                color = textColor,
-                fontSize = fontSize,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.5.sp,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-            )
+            content(contentColor)
         }
     }
 }
 
-/** Pulsante piccolo (Indietro, Storico, Elimina...). */
+/** Pulsante 3D con testo. */
 @Composable
-fun NeonTextButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    NeonButton(
-        label = label,
-        onClick = onClick,
-        modifier = modifier,
-        fontSize = 12.sp,
-        depth = 3.dp,
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-    )
+fun NeonButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    filled: Boolean = false,
+) {
+    Neon3D(modifier = modifier, onClick = onClick, enabled = enabled, filled = filled) { color ->
+        Text(
+            label.uppercase(),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 11.dp),
+            color = color,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.5.sp,
+            maxLines = 1,
+        )
+    }
 }
 
-/** Selettore a due o più opzioni: l'opzione scelta è un pulsante 3D in rilievo, le altre sono incassate. */
+/** Pulsante 3D con una sola icona; [contentDescription] serve per l'accessibilità. */
+@Composable
+fun NeonIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier.size(width = 46.dp, height = 50.dp),
+    enabled: Boolean = true,
+    filled: Boolean = false,
+) {
+    Neon3D(modifier = modifier, onClick = onClick, enabled = enabled, filled = filled) { color ->
+        Icon(icon, contentDescription, modifier = Modifier.size(24.dp), tint = color)
+    }
+}
+
+/**
+ * Selettore a due o più opzioni con cursore centrale: un blocco 3D rosso scorre
+ * da un'opzione all'altra, sopra una guida incassata.
+ */
 @Composable
 fun NeonToggle(
     options: List<String>,
@@ -314,40 +344,50 @@ fun NeonToggle(
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(18.dp)
-    Row(
+    val gap = 5.dp
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color(0xFF070D1A), shape)
+            .background(Color(0xFF0E0507), shape)
             .border(1.dp, Neon.Outline, shape)
             .padding(5.dp),
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        options.forEachIndexed { index, label ->
-            val selected = index == selectedIndex
-            val itemModifier = Modifier
-                .weight(1f)
-                .height(50.dp)
-            if (selected) {
-                NeonButton(
-                    label = label,
-                    onClick = { onSelect(index) },
-                    modifier = itemModifier,
-                    filled = true,
-                    fontSize = 12.sp,
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+        val count = options.size
+        val itemWidth = (maxWidth - gap * (count - 1)) / count
+        val thumbX by animateDpAsState(
+            targetValue = (itemWidth + gap) * selectedIndex,
+            animationSpec = spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMedium),
+            label = "thumb",
+        )
+        // Cursore
+        Neon3D(
+            modifier = Modifier
+                .offset(x = thumbX)
+                .width(itemWidth)
+                .height(50.dp),
+            filled = true,
+        ) {}
+        // Etichette, sopra il cursore
+        Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+            options.forEachIndexed { index, label ->
+                val selected = index == selectedIndex
+                val textColor by animateColorAsState(
+                    if (selected) Color(0xFF1A0508) else Neon.TextDim,
+                    label = "toggleText",
                 )
-            } else {
                 Box(
-                    modifier = itemModifier
+                    modifier = Modifier
+                        .width(itemWidth)
+                        .height(46.dp)
                         .clip(RoundedCornerShape(14.dp))
                         .clickable { onSelect(index) },
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         label.uppercase(),
-                        color = Neon.TextDim,
+                        color = textColor,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
                         maxLines = 1,
                     )
@@ -362,12 +402,12 @@ fun NeonToggle(
 fun neonFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedTextColor = Color.White,
     unfocusedTextColor = Color.White,
-    focusedBorderColor = Neon.Cyan,
+    focusedBorderColor = Neon.Accent,
     unfocusedBorderColor = Neon.Outline,
-    errorBorderColor = Neon.Red,
-    focusedLabelColor = Neon.Cyan,
+    errorBorderColor = Neon.Warn,
+    focusedLabelColor = Neon.Accent,
     unfocusedLabelColor = Neon.TextDim,
-    cursorColor = Neon.Cyan,
+    cursorColor = Neon.Accent,
     focusedSuffixColor = Neon.TextDim,
     unfocusedSuffixColor = Neon.TextDim,
 )
@@ -389,7 +429,7 @@ fun LcdPercentField(
         animationSpec = infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "pulse",
     )
-    val accent = if (isError) Neon.Red else Neon.Cyan
+    val accent = if (isError) Neon.Warn else Neon.Accent
     val shape = RoundedCornerShape(26.dp)
     val lcdStyle = TextStyle(
         fontFamily = LcdFontFamily,
@@ -412,7 +452,7 @@ fun LcdPercentField(
                 val radius = 26.dp.toPx()
                 // Spessore della lastra, per l'effetto 3D
                 drawRoundRect(
-                    color = Color(0xFF031A22),
+                    color = Color(0xFF2A0509),
                     topLeft = Offset(0f, 9.dp.toPx()),
                     size = size,
                     cornerRadius = CornerRadius(radius),
@@ -429,7 +469,7 @@ fun LcdPercentField(
                     )
                 }
             }
-            .background(Brush.verticalGradient(listOf(Color(0xFF10203D), Color(0xFF040A16))), shape)
+            .background(Brush.verticalGradient(listOf(Color(0xFF2E0F16), Color(0xFF12060A))), shape)
             .border(
                 2.dp,
                 Brush.linearGradient(

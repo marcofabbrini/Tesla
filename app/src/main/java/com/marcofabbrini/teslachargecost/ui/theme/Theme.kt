@@ -10,21 +10,21 @@ import androidx.compose.ui.text.TextStyle
 import com.marcofabbrini.teslachargecost.ui.ExoFamily
 import com.marcofabbrini.teslachargecost.ui.Neon
 
-// Tema futuristico: sempre scuro, accento ciano al neon. Tipografia: Exo 2.
+// Tema futuristico: sempre scuro, accento rosso al neon. Tipografia: Exo 2.
 private val NeonColors = darkColorScheme(
-    primary = Neon.Cyan,
-    onPrimary = Color(0xFF00252B),
-    primaryContainer = Color(0xFF0B2A3A),
-    onPrimaryContainer = Color(0xFFBDF4FF),
-    secondary = Neon.Violet,
+    primary = Neon.Accent,
+    onPrimary = Color(0xFF2B0508),
+    primaryContainer = Color(0xFF3A0D14),
+    onPrimaryContainer = Color(0xFFFFD6D9),
+    secondary = Neon.Accent2,
     background = Neon.BgBottom,
-    onBackground = Color(0xFFE6F1FF),
+    onBackground = Color(0xFFF5ECEE),
     surface = Neon.Panel,
-    onSurface = Color(0xFFE6F1FF),
-    surfaceVariant = Color(0xFF111B30),
+    onSurface = Color(0xFFF5ECEE),
+    surfaceVariant = Color(0xFF21090F),
     onSurfaceVariant = Neon.TextDim,
     outline = Neon.Outline,
-    error = Neon.Red,
+    error = Neon.Warn,
 )
 
 private val ExoTypography = Typography().let { t ->

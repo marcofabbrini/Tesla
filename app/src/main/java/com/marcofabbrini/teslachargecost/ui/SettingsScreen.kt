@@ -83,31 +83,33 @@ fun SettingsScreen(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 3.sp,
                 )
-                NeonTextButton("Indietro", onBack)
+                NeonIconButton(NeonIcons.Back, "Indietro", onBack)
             }
 
             HeaderImage(imageUri = settings.headerImageUri)
 
             GlassCard {
-                NeonLabel("Immagine di intestazione")
+                NeonLabel("Immagine di sfondo")
                 Row(
                     modifier = Modifier.padding(top = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    NeonButton(
-                        label = "Scegli immagine",
+                    NeonIconButton(
+                        icon = NeonIcons.Photo,
+                        contentDescription = "Scegli immagine",
                         onClick = { imagePicker.launch(arrayOf("image/*")) },
                         filled = true,
                     )
-                    NeonButton(
-                        label = "Ripristina",
+                    NeonIconButton(
+                        icon = NeonIcons.Restore,
+                        contentDescription = "Ripristina l'immagine predefinita",
                         onClick = { onHeaderImageChanged(null) },
                         enabled = settings.headerImageUri != null,
                     )
                 }
             }
 
-            GlassCard(glow = Neon.Violet) {
+            GlassCard(glow = Neon.Accent2) {
                 NeonLabel("Parametri")
 
                 OutlinedTextField(
@@ -144,13 +146,18 @@ fun SettingsScreen(
                     modifier = Modifier.padding(top = 14.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    NeonButton(
-                        label = "Salva",
+                    NeonIconButton(
+                        icon = NeonIcons.Save,
+                        contentDescription = "Salva i parametri",
                         onClick = { onSaveValues(tariff!!, capacity!!) },
                         enabled = tariff != null && capacity != null,
                         filled = true,
                     )
-                    NeonButton(label = "Predefiniti", onClick = onResetValues)
+                    NeonIconButton(
+                        icon = NeonIcons.Restore,
+                        contentDescription = "Valori predefiniti",
+                        onClick = onResetValues,
+                    )
                 }
 
                 Text(

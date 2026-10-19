@@ -61,7 +61,7 @@ fun HistoryScreen(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 3.sp,
                     )
-                    NeonTextButton("Indietro", onBack)
+                    NeonIconButton(NeonIcons.Back, "Indietro", onBack)
                 }
             }
 
@@ -79,7 +79,7 @@ fun HistoryScreen(
                 }
             } else {
                 item {
-                    GlassCard(glow = Neon.Violet) {
+                    GlassCard(glow = Neon.Accent2) {
                         NeonLabel("Riepilogo")
                         Line("Viaggi salvati", "${summary.count}")
                         Line("Energia totale", "${fmt2(summary.totalKwh)} kWh")
@@ -112,12 +112,12 @@ fun HistoryScreen(
                     onDelete(record.id)
                     pendingDelete = null
                 }) {
-                    Text("Elimina", color = Neon.Red)
+                    Text("Elimina", color = Neon.Warn)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { pendingDelete = null }) {
-                    Text("Annulla", color = Neon.Cyan)
+                    Text("Annulla", color = Neon.Accent)
                 }
             },
         )
@@ -135,7 +135,7 @@ private fun TripCard(record: TripRecord, onDelete: () -> Unit) {
             NeonLabel(formatDate(record.id))
             Text(
                 if (record.mode == ChargeMode.HOME) "CASA" else "COLONNINA",
-                color = Neon.Violet,
+                color = Neon.Accent2,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp,
@@ -144,10 +144,10 @@ private fun TripCard(record: TripRecord, onDelete: () -> Unit) {
         Text(
             fmtEuro(record.cost),
             modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
-            color = Neon.Cyan,
+            color = Neon.Accent,
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            style = TextStyle(shadow = Shadow(Neon.Cyan.copy(alpha = 0.5f), Offset.Zero, 20f)),
+            style = TextStyle(shadow = Shadow(Neon.Accent.copy(alpha = 0.5f), Offset.Zero, 20f)),
         )
         Line("Batteria consumata", "${percentText(record.percent)}% · ${fmt2(record.kwh)} kWh")
         Line(
@@ -160,7 +160,7 @@ private fun TripCard(record: TripRecord, onDelete: () -> Unit) {
             Line("Costo al km", "${fmt3(record.cost / km)} €/km")
         }
         Row(modifier = Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.End) {
-            NeonTextButton("Elimina", onDelete)
+            NeonIconButton(NeonIcons.Delete, "Elimina", onDelete)
         }
     }
 }

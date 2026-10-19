@@ -30,16 +30,17 @@ Modificabili dall'app e salvate in locale sul dispositivo (DataStore, nessun bac
 |---|---|
 | Tariffa ricarica a casa | 0,25 €/kWh |
 | Capacità utile batteria | 60,5 kWh (Model 3 Standard) |
-| Immagine di intestazione | immagine inclusa nell'app, sostituibile con una foto a scelta |
+| Immagine di sfondo | immagine inclusa nell'app, sostituibile con una foto a scelta |
 
 La capacità è una stima: Tesla non pubblica ufficialmente il dato, quindi è modificabile.
 
 ## Aspetto
 
-Interfaccia futuristica a tema scuro. Il titolo è nel font TESLA, rosso con un leggero bagliore e adattato alla
-larghezza dello schermo; l'auto in intestazione ha un alone rosso. Tutto il testo usa Exo 2. I pulsanti hanno un
-leggero effetto 3D (faccia sfumata, spessore, abbassamento al tocco). I punti percentuale sono mostrati in una
-casella 3D con alone luminoso, con font LCD a 7 segmenti e segmenti spenti sullo sfondo.
+Interfaccia futuristica a tema scuro con accento rosso. L'auto è l'immagine di sfondo della schermata principale
+(sostituibile dalle impostazioni). Il titolo è nel font TESLA, rosso con un leggero bagliore e adattato alla larghezza
+dello schermo; tutto il testo usa Exo 2. I pulsanti sono icone con leggero effetto 3D (faccia sfumata, spessore,
+abbassamento al tocco) e il selettore casa/colonnina ha un cursore che scorre da un lato all'altro. I punti percentuale
+sono mostrati in una casella 3D con alone luminoso, con font LCD a 7 segmenti e segmenti spenti sullo sfondo.
 
 ## Crediti
 
