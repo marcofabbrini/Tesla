@@ -82,15 +82,22 @@ fun HomeScreen(
     val percentInvalid = percentText.isNotBlank() && percent == null
     val homeFree = mode == Mode.HOME && freeCharge
     val homeTariff = if (homeFree) 0.0 else settings.homeTariff
-    val canSave = percent != null && percent > 0.0 && (mode == Mode.HOME || paid != null)
+    // Percentuale e km sono obbligatori; in colonnina serve anche l'importo pagato
+    val complete = percent != null && percent > 0.0 && km != null && (mode == Mode.HOME || paid != null)
+    val canSave = complete
+    val tripCost = when {
+        !complete || percent == null -> 0.0
+        mode == Mode.HOME -> TripCalculator.home(percent, settings.batteryCapacityKwh, homeTariff).cost
+        else -> paid ?: 0.0
+    }
 
     NeonBackground {
         Column(modifier = Modifier.fillMaxSize()) {
             // Titolo fisso in alto: il resto scorre sotto e sfuma
-            NeonTitle("TESLA STATS", Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp))
+            NeonTitle("TESLA", Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp), fitTo = "TESLA STATS", scale = 0.75f)
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 // Immagine di sfondo, fissa: le schede scorrono sopra
-                HomeBackdrop(settings.headerImageUri, Modifier.align(Alignment.TopCenter))
+                HomeBackdrop(settings.headerImageUri, tripCost, Modifier.align(Alignment.TopCenter))
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -121,15 +128,36 @@ fun HomeScreen(
             // Spazio in cui si vede l'auto sullo sfondo
             Spacer(Modifier.height(100.dp))
 
-            NeonLabel("Punti percentuale consumati", Modifier.padding(start = 4.dp))
-            LcdPercentField(
-                value = percentText,
-                onValueChange = { percentText = it },
-                isError = percentInvalid,
-            )
+            // Due dati obbligatori affiancati: batteria consumata e km percorsi
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.weight(1f)) {
+                    NeonLabel("Batteria usata", Modifier.padding(start = 4.dp))
+                    LcdField(
+                        value = percentText,
+                        onValueChange = { percentText = it },
+                        isError = percentInvalid,
+                        ghost = "888",
+                        suffix = "%",
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    NeonLabel("Km percorsi", Modifier.padding(start = 4.dp))
+                    LcdField(
+                        value = kmText,
+                        onValueChange = { kmText = it },
+                        isError = kmInvalid,
+                        ghost = "888.8",
+                        suffix = "km",
+                        modifier = Modifier.fillMaxWidth(),
+                        decimal = true,
+                        maxLength = 5,
+                    )
+                }
+            }
             if (percentInvalid) {
                 Text(
-                    "Inserisci un valore tra 0 e 100",
+                    "La batteria va da 0 a 100",
                     modifier = Modifier.padding(start = 4.dp),
                     color = Neon.Warn,
                     fontSize = 13.sp,
@@ -159,19 +187,6 @@ fun HomeScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 )
             }
-
-            OutlinedTextField(
-                value = kmText,
-                onValueChange = { kmText = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = neonFieldColors(),
-                label = { Text("Km percorsi (facoltativo)") },
-                suffix = { Text("km") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                isError = kmInvalid,
-            )
 
             ResultCard(mode, percent, paid, km, settings, homeFree)
 
@@ -244,18 +259,16 @@ private fun ResultCard(
     settings: Settings,
     free: Boolean,
 ) {
-    // Senza percentuale non c'è nulla da mostrare
-    if (percent == null) return
+    // Percentuale e km sono obbligatori: senza non c'è nulla da mostrare
+    if (percent == null || km == null) return
     GlassCard(glow = Neon.Accent2) {
         when {
             mode == Mode.HOME -> {
                 val tariff = if (free) 0.0 else settings.homeTariff
                 val r = TripCalculator.home(percent, settings.batteryCapacityKwh, tariff)
-                NeonLabel("Costo del viaggio")
-                BigValue(euro(r.cost))
                 MetricRow("Energia consumata", "${num(r.kwh)} kWh")
                 MetricRow("Tariffa casa", if (free) "Accumulatore (gratis)" else "${num(tariff)} €/kWh")
-                StatsSection(km?.let { TripCalculator.stats(r.kwh, r.cost, it) })
+                StatsSection(TripCalculator.stats(r.kwh, r.cost, km))
             }
 
             paid == null -> Hint("Inserisci l'importo pagato alla colonnina.")
@@ -269,14 +282,14 @@ private fun ResultCard(
                     BigValue("${num(r.costPerKwh)} €/kWh")
                     MetricRow("Energia consumata", "${num(r.kwh)} kWh")
                     MetricRow("Costo per punto percentuale", "${num(r.costPerPercent)} €")
-                    StatsSection(km?.let { TripCalculator.stats(r.kwh, paid, it) })
+                    StatsSection(TripCalculator.stats(r.kwh, paid, km))
                 }
             }
         }
     }
 }
 
-/** Consumo medio e costo al km, mostrati solo se sono stati inseriti i km. */
+/** Consumo medio e costo al km. */
 @Composable
 private fun StatsSection(stats: TripCalculator.TripStats?) {
     if (stats == null) return

@@ -11,6 +11,12 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import kotlin.math.PI
 import kotlin.math.sin
 import kotlin.random.Random
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.pow
+import kotlin.math.roundToInt
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -111,7 +117,7 @@ val TitleFontFamily = FontFamily(Font(R.font.tesla_title, FontWeight.Normal))
 
 /** Titolo a tutta larghezza, rosso con un leggero bagliore: il corpo si adatta alla larghezza disponibile. */
 @Composable
-fun NeonTitle(text: String, modifier: Modifier = Modifier) {
+fun NeonTitle(text: String, modifier: Modifier = Modifier, fitTo: String = text, scale: Float = 1f) {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -121,11 +127,12 @@ fun NeonTitle(text: String, modifier: Modifier = Modifier) {
             fontSize = probeSp.sp,
             letterSpacing = 0.06.em,
         )
-        val measured = remember(text, probe) { measurer.measure(text, probe, maxLines = 1, softWrap = false).size.width }
+        val measured = remember(fitTo, probe) { measurer.measure(fitTo, probe, maxLines = 1, softWrap = false).size.width }
         val available = with(density) { maxWidth.toPx() }
         // Il bagliore sporge un poco: si lascia un margine del 4%
         val fitSp = if (measured > 0) probeSp * (available * 0.96f) / measured else 24f
-        val sizeSp = fitSp.coerceIn(14f, 72f)
+        // La dimensione parte da quella che riempirebbe la larghezza con il testo [fitTo], poi si applica [scale]
+        val sizeSp = fitSp.coerceIn(14f, 72f) * scale
         Text(
             text,
             maxLines = 1,
@@ -596,15 +603,19 @@ fun neonFieldColors() = OutlinedTextFieldDefaults.colors(
 )
 
 /**
- * Casella 3D con alone luminoso pulsante per i punti percentuale.
- * Display LCD a 7 segmenti con segmenti spenti sullo sfondo, come un vero quadrante.
+ * Casella 3D con alone luminoso pulsante, in stile display LCD a 7 segmenti con segmenti spenti sullo sfondo.
+ * Il corpo del numero si adatta alla larghezza, così due caselle stanno affiancate.
  */
 @Composable
-fun LcdPercentField(
+fun LcdField(
     value: String,
     onValueChange: (String) -> Unit,
     isError: Boolean,
+    ghost: String,
+    suffix: String,
     modifier: Modifier = Modifier,
+    decimal: Boolean = false,
+    maxLength: Int = 3,
 ) {
     val pulse by rememberInfiniteTransition(label = "lcdGlow").animateFloat(
         initialValue = 0.55f,
@@ -613,37 +624,30 @@ fun LcdPercentField(
         label = "pulse",
     )
     val accent = if (isError) Neon.Warn else Neon.Accent
-    val shape = RoundedCornerShape(26.dp)
-    val lcdStyle = TextStyle(
-        fontFamily = LcdFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 104.sp,
-        textAlign = TextAlign.End,
-    )
+    val shape = RoundedCornerShape(22.dp)
     val focusRequester = remember { FocusRequester() }
 
     Box(
         modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 16.dp)
+            .padding(horizontal = 4.dp, vertical = 14.dp)
             .graphicsLayer {
                 rotationX = 9f
                 cameraDistance = 16f * density
                 transformOrigin = TransformOrigin(0.5f, 1f)
             }
             .drawBehind {
-                val radius = 26.dp.toPx()
+                val radius = 22.dp.toPx()
                 // Spessore della lastra, per l'effetto 3D
                 drawRoundRect(
                     color = Color(0xFF1A1B1F),
-                    topLeft = Offset(0f, 9.dp.toPx()),
+                    topLeft = Offset(0f, 8.dp.toPx()),
                     size = size,
                     cornerRadius = CornerRadius(radius),
                 )
                 // Alone luminoso: strati sempre più larghi e trasparenti
                 val layers = 8
                 for (i in layers downTo 1) {
-                    val spread = i * 2.5.dp.toPx()
+                    val spread = i * 2.dp.toPx()
                     drawRoundRect(
                         color = accent.copy(alpha = 0.05f * pulse * (layers - i + 1) / layers),
                         topLeft = Offset(-spread, -spread),
@@ -652,9 +656,9 @@ fun LcdPercentField(
                     )
                 }
             }
-            .background(Brush.verticalGradient(listOf(Color(0xFF2A2C33), Color(0xFF0F1013))), shape)
+            .background(Brush.verticalGradient(listOf(Color(0xFF24262C), Color(0xFF0F1013))), shape)
             .drawBehind {
-                val radius = CornerRadius(26.dp.toPx())
+                val radius = CornerRadius(22.dp.toPx())
                 // Riflesso del vetro sulla metà superiore
                 drawRoundRect(
                     brush = Brush.verticalGradient(
@@ -679,48 +683,131 @@ fun LcdPercentField(
                 indication = null,
             ) { focusRequester.requestFocus() },
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 22.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                // Segmenti spenti
-                Text(
-                    "888",
-                    modifier = Modifier.fillMaxWidth(),
-                    style = lcdStyle,
-                    color = accent.copy(alpha = 0.07f),
-                )
-                BasicTextField(
-                    value = value,
-                    onValueChange = { onValueChange(it.filter { c -> c.isDigit() }.take(3)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focusRequester),
-                    textStyle = lcdStyle.copy(
-                        color = accent,
-                        shadow = Shadow(accent.copy(alpha = 0.55f + 0.45f * pulse), Offset.Zero, 30f),
-                    ),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    cursorBrush = SolidColor(accent),
-                    decorationBox = { innerTextField ->
-                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                            if (value.isEmpty()) {
-                                Text("0", style = lcdStyle, color = accent.copy(alpha = 0.25f))
+        BoxWithConstraints(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            // Cifre larghe circa 0,85 volte il corpo: il corpo si calcola dallo spazio disponibile
+            val sizeSp = ((maxWidth.value - 28f) / (ghost.length * 0.85f)).coerceIn(20f, 46f)
+            val lcdStyle = TextStyle(
+                fontFamily = LcdFontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = sizeSp.sp,
+                textAlign = TextAlign.End,
+            )
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                    // Segmenti spenti
+                    Text(
+                        ghost,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = lcdStyle,
+                        color = accent.copy(alpha = 0.07f),
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                    BasicTextField(
+                        value = value,
+                        onValueChange = { raw ->
+                            val cleaned = if (decimal) {
+                                val text = raw.replace(',', '.').filter { c -> c.isDigit() || c == '.' }
+                                val firstDot = text.indexOf('.')
+                                if (firstDot < 0) text else text.substring(0, firstDot + 1) + text.substring(firstDot + 1).replace(".", "")
+                            } else {
+                                raw.filter { c -> c.isDigit() }
                             }
-                            innerTextField()
-                        }
-                    },
+                            onValueChange(cleaned.take(maxLength))
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester),
+                        textStyle = lcdStyle.copy(
+                            color = accent,
+                            shadow = Shadow(accent.copy(alpha = 0.55f + 0.45f * pulse), Offset.Zero, 24f),
+                        ),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number,
+                        ),
+                        cursorBrush = SolidColor(accent),
+                        decorationBox = { innerTextField ->
+                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                                if (value.isEmpty()) {
+                                    Text("0", style = lcdStyle, color = accent.copy(alpha = 0.25f))
+                                }
+                                innerTextField()
+                            }
+                        },
+                    )
+                }
+                Text(
+                    suffix,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 2.dp),
+                    color = accent.copy(alpha = 0.9f),
+                    fontSize = (sizeSp * 0.42f).coerceAtLeast(12f).sp,
+                    fontWeight = FontWeight.Bold,
                 )
             }
-            Text(
-                "%",
-                modifier = Modifier.padding(start = 8.dp, bottom = 14.dp),
-                color = accent.copy(alpha = 0.9f),
-                fontSize = 38.sp,
-                fontWeight = FontWeight.Bold,
-            )
         }
+    }
+}
+
+/**
+ * Contatore a rulli come quello della pompa di benzina: ogni cifra è un rullo che gira
+ * fino al valore. Zeri iniziali spenti, segmenti spenti dietro le cifre.
+ */
+@Composable
+fun OdometerPrice(value: Double, modifier: Modifier = Modifier) {
+    val target = (value * 100).roundToInt().coerceIn(0, 999_999).toFloat()
+    val animated = remember { Animatable(0f) }
+    LaunchedEffect(target) {
+        animated.animateTo(target, tween(1500, easing = FastOutSlowInEasing))
+    }
+    val current = animated.value
+    val shape = RoundedCornerShape(12.dp)
+    val digitHeight = 38.dp
+    val lcd = TextStyle(fontFamily = LcdFontFamily, fontWeight = FontWeight.Bold, fontSize = 30.sp)
+
+    Row(
+        modifier = modifier
+            .background(Brush.verticalGradient(listOf(Color(0xFF0B0C0E), Color(0xFF17181C))), shape)
+            .border(1.dp, Brush.verticalGradient(listOf(Neon.Accent.copy(alpha = 0.6f), Neon.Accent.copy(alpha = 0.15f))), shape)
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // 6 rulli: migliaia, centinaia, decine, unità, decimi e centesimi di euro
+        for (place in 5 downTo 0) {
+            val divisor = 10f.pow(place)
+            val position = (current / divisor) % 10f
+            // Gli zeri iniziali restano spenti
+            val lit = place <= 2 || current >= divisor
+            Box(modifier = Modifier.height(digitHeight).clipToBounds()) {
+                Text("8", style = lcd, color = Neon.Accent.copy(alpha = 0.07f), modifier = Modifier.align(Alignment.Center))
+                Column(
+                    modifier = Modifier
+                        .wrapContentHeight(align = Alignment.Top, unbounded = true)
+                        .offset { IntOffset(0, -(position * digitHeight.toPx()).roundToInt()) },
+                ) {
+                    repeat(11) { i ->
+                        Box(modifier = Modifier.height(digitHeight), contentAlignment = Alignment.Center) {
+                            Text(
+                                "${i % 10}",
+                                style = lcd.copy(
+                                    shadow = Shadow(Neon.Accent.copy(alpha = 0.6f), Offset.Zero, 18f),
+                                ),
+                                color = if (lit) Neon.Accent else Neon.Accent.copy(alpha = 0.12f),
+                            )
+                        }
+                    }
+                }
+            }
+            if (place == 2) {
+                Text(",", style = lcd, color = Neon.Accent, modifier = Modifier.padding(horizontal = 1.dp))
+            }
+        }
+        Text(
+            "€",
+            modifier = Modifier.padding(start = 6.dp),
+            color = Neon.Accent.copy(alpha = 0.9f),
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }

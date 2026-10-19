@@ -12,7 +12,7 @@ Si inserisce la percentuale consumata in un campo grande, leggibile a colpo d'oc
 - **Colonnina pubblica**: si inserisce l'importo pagato e i punti percentuale usati; l'app calcola
   il costo effettivo al kWh e il costo per punto percentuale.
 
-In entrambe le modalità puoi indicare anche i **km percorsi** (facoltativo): l'app calcola il consumo
+Batteria consumata e **km percorsi** sono obbligatori e stanno affiancati in due caselle LCD. Il costo del viaggio compare a rulli, come la pompa di benzina, in basso a destra dell'immagine; l'app calcola anche il consumo
 medio (Wh/km e kWh/100 km) e il costo al km e ogni 100 km.
 
 ## Storico
