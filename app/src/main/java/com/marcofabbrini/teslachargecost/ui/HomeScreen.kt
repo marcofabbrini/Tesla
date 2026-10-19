@@ -97,7 +97,7 @@ fun HomeScreen(
             NeonTitle("TESLA", Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp), fitTo = "TESLA STATS", scale = 0.75f)
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 // Immagine di sfondo, fissa: le schede scorrono sopra
-                HomeBackdrop(settings.headerImageUri, tripCost, Modifier.align(Alignment.TopCenter))
+                HomeBackdrop(settings.headerImageUri, Modifier.align(Alignment.TopCenter))
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -125,8 +125,10 @@ fun HomeScreen(
                 NeonIconButton(NeonIcons.Settings, "Impostazioni", onOpenSettings)
             }
 
-            // Spazio in cui si vede l'auto sullo sfondo
-            Spacer(Modifier.height(100.dp))
+            // Spazio in cui si vede l'auto sullo sfondo; il contatore del costo sta in basso a destra e scorre con la pagina
+            Box(modifier = Modifier.fillMaxWidth().height(116.dp), contentAlignment = Alignment.BottomEnd) {
+                OdometerPrice(value = tripCost)
+            }
 
             // Due dati obbligatori affiancati: batteria consumata e km percorsi
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -139,6 +141,7 @@ fun HomeScreen(
                         ghost = "888",
                         suffix = "%",
                         modifier = Modifier.fillMaxWidth(),
+                        sizeChars = 5,
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
@@ -152,6 +155,7 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxWidth(),
                         decimal = true,
                         maxLength = 5,
+                        sizeChars = 5,
                     )
                 }
             }

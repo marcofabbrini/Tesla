@@ -58,7 +58,7 @@ private fun rememberCustomImage(imageUri: String?): State<ImageBitmap?> {
  * oppure l'immagine scelta dall'utente, sfumata verso il basso.
  */
 @Composable
-fun HomeBackdrop(imageUri: String?, cost: Double, modifier: Modifier = Modifier) {
+fun HomeBackdrop(imageUri: String?, modifier: Modifier = Modifier) {
     val custom by rememberCustomImage(imageUri)
     val bitmap = custom
     Box(modifier = modifier.fillMaxWidth().height(210.dp)) {
@@ -92,13 +92,6 @@ fun HomeBackdrop(imageUri: String?, cost: Double, modifier: Modifier = Modifier)
                 alignment = Alignment.TopCenter,
             )
         }
-        // Costo del viaggio a rulli, nello spazio libero in basso a destra
-        OdometerPrice(
-            value = cost,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 4.dp),
-        )
     }
 }
 

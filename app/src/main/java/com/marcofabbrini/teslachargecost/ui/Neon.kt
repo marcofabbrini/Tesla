@@ -15,6 +15,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.IntOffset
+import kotlin.math.floor
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import androidx.compose.animation.animateColorAsState
@@ -253,63 +254,58 @@ private fun SmokeLayer() {
     )
 }
 
-/** Cornice dell'app: filo grigio chiaro sfumato, con una cometa rossa che scorre sul solo lato sinistro. */
+/**
+ * Cursore rosso a pixel, come lo scanner di Supercar: una testa luminosa con una coda a gradini
+ * scorre lungo il lato sinistro dall'alto verso il basso, a scatti di un blocco, con un alone morbido.
+ */
 @Composable
 private fun FrameLayer() {
-    val t by rememberInfiniteTransition(label = "frame").animateFloat(
+    val t by rememberInfiniteTransition(label = "scanner").animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(4200, easing = LinearEasing)),
-        label = "comet",
+        animationSpec = infiniteRepeatable(tween(3600, easing = LinearEasing)),
+        label = "scan",
     )
     Box(
         modifier = Modifier
             .fillMaxSize()
             .drawBehind {
-                val inset = 3.dp.toPx()
-                val radius = 24.dp.toPx()
-                drawRoundRect(
-                    brush = Brush.linearGradient(
-                        listOf(
-                            Neon.Accent.copy(alpha = 0.60f),
-                            Neon.Accent.copy(alpha = 0.10f),
-                            Neon.Accent.copy(alpha = 0.42f),
-                            Neon.Accent.copy(alpha = 0.12f),
+                val segH = 7.dp.toPx()
+                val gap = 2.dp.toPx()
+                val step = segH + gap
+                val segW = 4.dp.toPx()
+                val x = 3.dp.toPx()
+                val count = (size.height / step).toInt()
+                val tail = 12
+                // Posizione a scatti: la testa salta da un blocco al successivo
+                val head = (t * (count + tail)).toInt()
+                for (d in 0 until tail) {
+                    val i = head - d
+                    if (i !in 0 until count) continue
+                    val level = 1f - d / tail.toFloat()
+                    val a = level * level
+                    val y = i * step
+                    // Alone che si apre verso destra
+                    drawRect(
+                        brush = Brush.horizontalGradient(
+                            listOf(Neon.Red.copy(alpha = 0.40f * a), Color.Transparent),
+                            startX = x,
+                            endX = x + 26.dp.toPx(),
                         ),
-                        start = Offset.Zero,
-                        end = Offset(size.width, size.height),
-                    ),
-                    topLeft = Offset(inset, inset),
-                    size = Size(size.width - 2 * inset, size.height - 2 * inset),
-                    cornerRadius = CornerRadius(radius),
-                    style = Stroke(1.5.dp.toPx()),
-                )
-                // Cometa: scende lungo il lato sinistro, tra le due curve degli angoli
-                val yMin = inset + radius
-                val yMax = size.height - inset - radius
-                val tail = size.height * 0.3f
-                val head = t * (size.height + tail)
-                val y0 = (head - tail).coerceIn(yMin, yMax)
-                val y1 = head.coerceIn(yMin, yMax)
-                if (y1 > y0) {
-                    for ((width, alpha) in listOf(7.dp.toPx() to 0.30f, 2.5.dp.toPx() to 1f)) {
-                        drawLine(
-                            brush = Brush.verticalGradient(
-                                listOf(Neon.Red.copy(alpha = 0f), Neon.Red.copy(alpha = alpha)),
-                                startY = head - tail,
-                                endY = head,
-                            ),
-                            start = Offset(inset, y0),
-                            end = Offset(inset, y1),
-                            strokeWidth = width,
-                        )
+                        topLeft = Offset(x, y - 4.dp.toPx()),
+                        size = Size(26.dp.toPx(), segH + 8.dp.toPx()),
+                    )
+                    drawRect(Neon.Red.copy(alpha = 0.22f * a), Offset(x - 2.dp.toPx(), y - 2.dp.toPx()), Size(segW + 4.dp.toPx(), segH + 4.dp.toPx()))
+                    drawRect(Neon.Red.copy(alpha = a), Offset(x, y), Size(segW, segH))
+                    if (d == 0) {
+                        drawRect(Color.White.copy(alpha = 0.75f), Offset(x + 1.dp.toPx(), y + 1.dp.toPx()), Size(segW - 2.dp.toPx(), segH - 2.dp.toPx()))
                     }
                 }
             },
     )
 }
 
-/** Sfondo scuro a strati: griglia e aloni, circuiti, fumo e cornice animata. */
+/** Sfondo scuro a strati: griglia e aloni, circuiti, fumo e cursore rosso. */
 @Composable
 fun NeonBackground(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
     Box(
@@ -616,6 +612,7 @@ fun LcdField(
     modifier: Modifier = Modifier,
     decimal: Boolean = false,
     maxLength: Int = 3,
+    sizeChars: Int = ghost.length,
 ) {
     val pulse by rememberInfiniteTransition(label = "lcdGlow").animateFloat(
         initialValue = 0.55f,
@@ -685,7 +682,7 @@ fun LcdField(
     ) {
         BoxWithConstraints(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
             // Cifre larghe circa 0,85 volte il corpo: il corpo si calcola dallo spazio disponibile
-            val sizeSp = ((maxWidth.value - 28f) / (ghost.length * 0.85f)).coerceIn(20f, 46f)
+            val sizeSp = ((maxWidth.value - 28f) / (sizeChars * 0.85f)).coerceIn(20f, 46f)
             val lcdStyle = TextStyle(
                 fontFamily = LcdFontFamily,
                 fontWeight = FontWeight.Bold,
@@ -765,6 +762,16 @@ fun OdometerPrice(value: Double, modifier: Modifier = Modifier) {
     val digitHeight = 38.dp
     val lcd = TextStyle(fontFamily = LcdFontFamily, fontWeight = FontWeight.Bold, fontSize = 30.sp)
 
+    // Posizione di ogni rullo (0..10 righe). Il primo gira in continuo; ogni rullo successivo
+    // resta fermo sulla sua cifra e avanza solo mentre il rullo precedente passa da 9 a 0.
+    // A riposo (valore intero) tutti i rulli sono quindi esattamente allineati sulla cifra.
+    val positions = FloatArray(6)
+    positions[0] = current % 10f
+    for (place in 1..5) {
+        val base = floor(current / 10f.pow(place)) % 10f
+        positions[place] = base + (positions[place - 1] - 9f).coerceIn(0f, 1f)
+    }
+
     Row(
         modifier = modifier
             .background(Brush.verticalGradient(listOf(Color(0xFF0B0C0E), Color(0xFF17181C))), shape)
@@ -774,10 +781,9 @@ fun OdometerPrice(value: Double, modifier: Modifier = Modifier) {
     ) {
         // 6 rulli: migliaia, centinaia, decine, unità, decimi e centesimi di euro
         for (place in 5 downTo 0) {
-            val divisor = 10f.pow(place)
-            val position = (current / divisor) % 10f
+            val position = positions[place]
             // Gli zeri iniziali restano spenti
-            val lit = place <= 2 || current >= divisor
+            val lit = place <= 2 || current >= 10f.pow(place)
             Box(modifier = Modifier.height(digitHeight).clipToBounds()) {
                 Text("8", style = lcd, color = Neon.Accent.copy(alpha = 0.07f), modifier = Modifier.align(Alignment.Center))
                 Column(
