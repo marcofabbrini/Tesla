@@ -38,7 +38,7 @@ jobs:
       - name: Test e build APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_ALIAS: teslachargecost
         run: gradle testDebugUnitTest assembleRelease
 
       - uses: actions/upload-artifact@v4

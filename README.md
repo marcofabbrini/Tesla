@@ -68,9 +68,9 @@ La chiave di firma va impostata una volta nei secret del repository (Settings, S
 |---|---|
 | `KEYSTORE_B64` | il file `.jks` codificato in base64 |
 | `KEYSTORE_PASSWORD` | password del keystore (e della chiave) |
-| `KEY_ALIAS` | alias della chiave (`teslachargecost`) |
 
-Conserva una copia della chiave: senza, i nuovi APK non potranno aggiornare quelli già installati.
+L'alias della chiave è `teslachargecost` e sta nel workflow. Conserva una copia della chiave: senza,
+i nuovi APK non potranno aggiornare quelli già installati.
 
 ## Struttura
 
