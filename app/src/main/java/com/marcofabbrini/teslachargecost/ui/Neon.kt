@@ -10,6 +10,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.em
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -60,12 +71,54 @@ object Neon {
     val Cyan = Color(0xFF00E5FF)
     val Violet = Color(0xFF7C4DFF)
     val Red = Color(0xFFFF5370)
+    val Crimson = Color(0xFFFF2A3D)
     val Outline = Color(0xFF1C2E4A)
     val TextDim = Color(0xFF8FA3BF)
 }
 
 /** Font LCD a 7 segmenti (DSEG, licenza SIL OFL) usato solo per il numero della percentuale. */
 val LcdFontFamily = FontFamily(Font(R.font.dseg7_classic_bold, FontWeight.Bold))
+
+/** Exo 2 (Google Fonts, SIL OFL): font di tutto il testo, tranne il titolo e il numero LCD. */
+val ExoFamily = FontFamily(
+    Font(R.font.exo2_regular, FontWeight.Normal),
+    Font(R.font.exo2_medium, FontWeight.Medium),
+    Font(R.font.exo2_semibold, FontWeight.SemiBold),
+    Font(R.font.exo2_bold, FontWeight.Bold),
+)
+
+/** Font del titolo (TESLA, licenza CC BY-NC-SA: uso non commerciale). */
+val TitleFontFamily = FontFamily(Font(R.font.tesla_title, FontWeight.Normal))
+
+/** Titolo a tutta larghezza, rosso con un leggero bagliore: il corpo si adatta alla larghezza disponibile. */
+@Composable
+fun NeonTitle(text: String, modifier: Modifier = Modifier) {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        val probeSp = 100f
+        val probe = TextStyle(
+            fontFamily = TitleFontFamily,
+            fontSize = probeSp.sp,
+            letterSpacing = 0.06.em,
+        )
+        val measured = remember(text, probe) { measurer.measure(text, probe, maxLines = 1, softWrap = false).size.width }
+        val available = with(density) { maxWidth.toPx() }
+        // Il bagliore sporge un poco: si lascia un margine del 4%
+        val fitSp = if (measured > 0) probeSp * (available * 0.96f) / measured else 24f
+        val sizeSp = fitSp.coerceIn(14f, 72f)
+        Text(
+            text,
+            maxLines = 1,
+            softWrap = false,
+            color = Neon.Crimson,
+            style = probe.copy(
+                fontSize = sizeSp.sp,
+                shadow = Shadow(Neon.Crimson.copy(alpha = 0.65f), Offset.Zero, sizeSp * 0.35f),
+            ),
+        )
+    }
+}
 
 /** Sfondo scuro con griglia sottile e aloni di colore. */
 @Composable
@@ -146,26 +199,113 @@ fun NeonLabel(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** Pulsante testuale con contorno al neon. */
+/**
+ * Pulsante con leggero effetto 3D: faccia sfumata con bordo di luce, spessore sotto e
+ * abbassamento al tocco. [filled] = pieno e colorato, altrimenti scuro con contorno luminoso.
+ */
+@Composable
+fun NeonButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    filled: Boolean = false,
+    accent: Color = Neon.Cyan,
+    fontSize: TextUnit = 13.sp,
+    depth: Dp = 4.dp,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 11.dp),
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val shape = RoundedCornerShape(14.dp)
+
+    val slab = when {
+        !enabled -> Color(0xFF080F1D)
+        filled -> lerp(accent, Color.Black, 0.55f)
+        else -> lerp(accent, Color.Black, 0.72f)
+    }
+    val faceBrush = when {
+        !enabled -> Brush.verticalGradient(listOf(Color(0xFF1B2A45), Color(0xFF111C31)))
+        filled -> Brush.verticalGradient(listOf(lerp(accent, Color.White, 0.30f), accent, lerp(accent, Color.Black, 0.22f)))
+        else -> Brush.verticalGradient(listOf(Color(0xFF1D2F52), Color(0xFF0F1B34)))
+    }
+    val borderBrush = when {
+        !enabled -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent))
+        filled -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.65f), accent.copy(alpha = 0.2f)))
+        else -> Brush.verticalGradient(listOf(accent.copy(alpha = 0.95f), accent.copy(alpha = 0.25f)))
+    }
+    val textColor = when {
+        !enabled -> Neon.TextDim
+        filled -> Color(0xFF1A0508).takeIf { accent == Neon.Crimson || accent == Neon.Red } ?: Color(0xFF00252B)
+        else -> accent
+    }
+
+    Box(
+        modifier = modifier
+            .drawBehind {
+                // Bagliore leggero attorno ai pulsanti attivi
+                if (enabled) {
+                    drawRoundRect(
+                        color = accent.copy(alpha = if (filled) 0.16f else 0.08f),
+                        topLeft = Offset(-3.dp.toPx(), -1.dp.toPx()),
+                        size = Size(size.width + 6.dp.toPx(), size.height + 4.dp.toPx()),
+                        cornerRadius = CornerRadius(17.dp.toPx()),
+                    )
+                }
+            },
+        propagateMinConstraints = true,
+    ) {
+        // Spessore
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .padding(top = depth)
+                .background(slab, shape),
+        )
+        // Faccia
+        Box(
+            modifier = Modifier
+                .padding(bottom = depth)
+                .offset(y = if (pressed && enabled) depth - 1.dp else 0.dp)
+                .clip(shape)
+                .background(faceBrush, shape)
+                .border(1.dp, borderBrush, shape)
+                .clickable(
+                    interactionSource = interaction,
+                    indication = null,
+                    enabled = enabled,
+                    onClick = onClick,
+                )
+                .padding(contentPadding),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                label.uppercase(),
+                color = textColor,
+                fontSize = fontSize,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.5.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+/** Pulsante piccolo (Indietro, Storico, Elimina...). */
 @Composable
 fun NeonTextButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(12.dp)
-    Text(
-        label.uppercase(),
-        modifier = modifier
-            .clip(shape)
-            .border(1.dp, Neon.Cyan.copy(alpha = 0.6f), shape)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        color = Neon.Cyan,
+    NeonButton(
+        label = label,
+        onClick = onClick,
+        modifier = modifier,
         fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 1.5.sp,
-        textAlign = TextAlign.Center,
+        depth = 3.dp,
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
     )
 }
 
-/** Selettore a due o più opzioni, stile "pillola" luminosa. */
+/** Selettore a due o più opzioni: l'opzione scelta è un pulsante 3D in rilievo, le altre sono incassate. */
 @Composable
 fun NeonToggle(
     options: List<String>,
@@ -173,47 +313,45 @@ fun NeonToggle(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(18.dp)
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color(0xFF0A1222), shape)
+            .background(Color(0xFF070D1A), shape)
             .border(1.dp, Neon.Outline, shape)
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(5.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
         options.forEachIndexed { index, label ->
             val selected = index == selectedIndex
-            val itemShape = RoundedCornerShape(12.dp)
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(itemShape)
-                    .then(
-                        if (selected) {
-                            Modifier
-                                .background(
-                                    Brush.horizontalGradient(
-                                        listOf(Neon.Cyan.copy(alpha = 0.28f), Neon.Violet.copy(alpha = 0.28f)),
-                                    ),
-                                    itemShape,
-                                )
-                                .border(1.dp, Neon.Cyan.copy(alpha = 0.8f), itemShape)
-                        } else {
-                            Modifier
-                        },
-                    )
-                    .clickable { onSelect(index) }
-                    .padding(vertical = 12.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    label.uppercase(),
-                    color = if (selected) Neon.Cyan else Neon.TextDim,
+            val itemModifier = Modifier
+                .weight(1f)
+                .height(50.dp)
+            if (selected) {
+                NeonButton(
+                    label = label,
+                    onClick = { onSelect(index) },
+                    modifier = itemModifier,
+                    filled = true,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 1.sp,
+                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
                 )
+            } else {
+                Box(
+                    modifier = itemModifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { onSelect(index) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        label.uppercase(),
+                        color = Neon.TextDim,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 1.sp,
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }

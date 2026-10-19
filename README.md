@@ -36,11 +36,15 @@ La capacità è una stima: Tesla non pubblica ufficialmente il dato, quindi è m
 
 ## Aspetto
 
-Interfaccia futuristica a tema scuro. Il testo usa il font di sistema; i punti percentuale sono mostrati
-in una casella 3D con alone luminoso, con font LCD a 7 segmenti e segmenti spenti sullo sfondo.
+Interfaccia futuristica a tema scuro. Il titolo è nel font TESLA, rosso con un leggero bagliore e adattato alla
+larghezza dello schermo; l'auto in intestazione ha un alone rosso. Tutto il testo usa Exo 2. I pulsanti hanno un
+leggero effetto 3D (faccia sfumata, spessore, abbassamento al tocco). I punti percentuale sono mostrati in una
+casella 3D con alone luminoso, con font LCD a 7 segmenti e segmenti spenti sullo sfondo.
 
 ## Crediti
 
+- Font **Exo 2** (Natanael Gama), licenza SIL Open Font License 1.1 (vedi `licenses/Exo2-OFL.txt`).
+- Font del titolo **TESLA**, licenza Creative Commons BY-NC-SA: solo uso non commerciale.
 - Font LCD **DSEG7 Classic** di keshikan, licenza SIL Open Font License 1.1 (vedi `licenses/DSEG-LICENSE.txt`).
 - L'immagine di intestazione è stata fornita dall'autore dell'app. Se non è tua, sostituiscila prima di
   rendere pubblico il repository.

@@ -68,7 +68,7 @@ fun HeaderImage(imageUri: String?, modifier: Modifier = Modifier) {
                 // Luce a terra sotto l'auto
                 drawRect(
                     Brush.radialGradient(
-                        listOf(Neon.Cyan.copy(alpha = 0.35f), Color.Transparent),
+                        listOf(Neon.Crimson.copy(alpha = 0.38f), Color.Transparent),
                         center = Offset(size.width / 2f, size.height * 0.92f),
                         radius = size.width * 0.55f,
                     ),
@@ -76,7 +76,7 @@ fun HeaderImage(imageUri: String?, modifier: Modifier = Modifier) {
             }
             .border(
                 1.dp,
-                Brush.linearGradient(listOf(Neon.Cyan.copy(alpha = 0.6f), Neon.Violet.copy(alpha = 0.25f))),
+                Brush.linearGradient(listOf(Neon.Crimson.copy(alpha = 0.65f), Neon.Violet.copy(alpha = 0.25f))),
                 shape,
             ),
         contentAlignment = Alignment.Center,
@@ -105,17 +105,6 @@ fun HeaderImage(imageUri: String?, modifier: Modifier = Modifier) {
                 contentScale = ContentScale.Fit,
             )
         }
-
-        Text(
-            "CHARGE COST",
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp),
-            color = Neon.Cyan,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 4.sp,
-        )
     }
 }
 

@@ -3,7 +3,6 @@ package com.marcofabbrini.teslachargecost.ui
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,9 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -67,19 +63,6 @@ fun SettingsScreen(
         }
     }
 
-    val buttonShape = RoundedCornerShape(14.dp)
-    val filledColors = ButtonDefaults.buttonColors(
-        containerColor = Neon.Cyan,
-        contentColor = Color(0xFF00252B),
-        disabledContainerColor = Color(0xFF16263F),
-        disabledContentColor = Neon.TextDim,
-    )
-    val outlinedColors = ButtonDefaults.outlinedButtonColors(
-        contentColor = Neon.Cyan,
-        disabledContentColor = Neon.TextDim,
-    )
-    val outlineBorder = BorderStroke(1.dp, Neon.Cyan.copy(alpha = 0.6f))
-
     NeonBackground {
         Column(
             modifier = Modifier
@@ -111,22 +94,16 @@ fun SettingsScreen(
                     modifier = Modifier.padding(top = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Button(
+                    NeonButton(
+                        label = "Scegli immagine",
                         onClick = { imagePicker.launch(arrayOf("image/*")) },
-                        shape = buttonShape,
-                        colors = filledColors,
-                    ) {
-                        Text("Scegli immagine")
-                    }
-                    OutlinedButton(
+                        filled = true,
+                    )
+                    NeonButton(
+                        label = "Ripristina",
                         onClick = { onHeaderImageChanged(null) },
                         enabled = settings.headerImageUri != null,
-                        shape = buttonShape,
-                        colors = outlinedColors,
-                        border = outlineBorder,
-                    ) {
-                        Text("Ripristina")
-                    }
+                    )
                 }
             }
 
@@ -167,22 +144,13 @@ fun SettingsScreen(
                     modifier = Modifier.padding(top = 14.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Button(
+                    NeonButton(
+                        label = "Salva",
                         onClick = { onSaveValues(tariff!!, capacity!!) },
                         enabled = tariff != null && capacity != null,
-                        shape = buttonShape,
-                        colors = filledColors,
-                    ) {
-                        Text("Salva")
-                    }
-                    OutlinedButton(
-                        onClick = onResetValues,
-                        shape = buttonShape,
-                        colors = outlinedColors,
-                        border = outlineBorder,
-                    ) {
-                        Text("Predefiniti")
-                    }
+                        filled = true,
+                    )
+                    NeonButton(label = "Predefiniti", onClick = onResetValues)
                 }
 
                 Text(

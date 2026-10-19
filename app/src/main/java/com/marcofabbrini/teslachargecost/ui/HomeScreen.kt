@@ -79,13 +79,7 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                "TESLA CHARGE COST",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 3.sp,
-            )
+            NeonTitle("TESLA CHARGE COST")
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -146,7 +140,8 @@ fun HomeScreen(
 
             ResultCard(mode, percent, paid, km, settings)
 
-            Button(
+            NeonButton(
+                label = if (saved) "Salvato nello storico" else "Salva consumo",
                 onClick = {
                     percent?.let { p ->
                         TripCalculator.record(
@@ -163,24 +158,14 @@ fun HomeScreen(
                         }
                     }
                 },
-                enabled = canSave && !saved,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Neon.Cyan,
-                    contentColor = Color(0xFF00252B),
-                    disabledContainerColor = Color(0xFF16263F),
-                    disabledContentColor = if (saved) Neon.Cyan else Neon.TextDim,
-                ),
-            ) {
-                Text(
-                    if (saved) "SALVATO NELLO STORICO" else "SALVA CONSUMO",
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp,
-                )
-            }
+                    .height(60.dp),
+                enabled = canSave && !saved,
+                filled = true,
+                fontSize = 15.sp,
+                depth = 5.dp,
+            )
         }
     }
 }
