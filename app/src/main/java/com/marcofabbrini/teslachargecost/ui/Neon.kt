@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 import androidx.compose.animation.core.Animatable
@@ -256,14 +257,14 @@ private fun SmokeLayer() {
 
 /**
  * Cursore rosso a pixel, come lo scanner di Supercar: una testa luminosa con una coda a gradini
- * scorre lungo il lato sinistro dall'alto verso il basso, a scatti di un blocco, con un alone morbido.
+ * rimbalza su e giù lungo il lato sinistro, a scatti di un blocco, con un alone morbido.
  */
 @Composable
 private fun FrameLayer() {
     val t by rememberInfiniteTransition(label = "scanner").animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(3600, easing = LinearEasing)),
+        animationSpec = infiniteRepeatable(tween(5200, easing = LinearEasing)),
         label = "scan",
     )
     Box(
@@ -277,10 +278,15 @@ private fun FrameLayer() {
                 val x = 3.dp.toPx()
                 val count = (size.height / step).toInt()
                 val tail = 12
+                // Un ciclo = discesa e risalita. L'andamento a coseno rallenta agli estremi, come un rimbalzo
+                val goingDown = t < 0.5f
+                val leg = if (goingDown) t * 2f else (1f - t) * 2f
+                val eased = 0.5f - 0.5f * cos(PI.toFloat() * leg)
                 // Posizione a scatti: la testa salta da un blocco al successivo
-                val head = (t * (count + tail)).toInt()
+                val head = (eased * (count - 1)).roundToInt()
+                val dir = if (goingDown) 1 else -1
                 for (d in 0 until tail) {
-                    val i = head - d
+                    val i = head - dir * d
                     if (i !in 0 until count) continue
                     val level = 1f - d / tail.toFloat()
                     val a = level * level
