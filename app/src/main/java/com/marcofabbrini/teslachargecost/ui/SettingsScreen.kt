@@ -90,7 +90,7 @@ fun SettingsScreen(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 3.sp,
                 )
-                NeonIconButton(NeonIcons.Back, "Indietro", onBack)
+                NeonFlatIcon(NeonIcons.Back, "Indietro", onBack)
             }
 
             HeaderImage(imageUri = settings.headerImageUri)

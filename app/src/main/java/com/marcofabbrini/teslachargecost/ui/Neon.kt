@@ -524,6 +524,32 @@ fun NeonIconButton(
     }
 }
 
+/** Icona piatta, senza rilievo, per i pulsanti d'intestazione. L'area di tocco resta comoda (40 dp). */
+@Composable
+fun NeonFlatIcon(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    Box(
+        modifier = modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            icon,
+            contentDescription,
+            modifier = Modifier.size(20.dp),
+            tint = if (pressed) Color.White else Neon.Accent,
+        )
+    }
+}
+
 /**
  * Selettore a due o più opzioni con cursore centrale: un blocco 3D rosso scorre
  * da un'opzione all'altra, sopra una guida incassata.

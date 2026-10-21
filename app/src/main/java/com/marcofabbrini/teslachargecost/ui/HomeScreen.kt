@@ -94,7 +94,16 @@ fun HomeScreen(
     NeonBackground {
         Column(modifier = Modifier.fillMaxSize()) {
             // Titolo fisso in alto: il resto scorre sotto e sfuma
-            NeonTitle("TESLA", Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp), fitTo = "TESLA STATS", scale = 0.75f)
+            Box(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp)) {
+                NeonTitle("TESLA", fitTo = "TESLA STATS", scale = 0.75f)
+                Row(
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    NeonFlatIcon(NeonIcons.History, "Storico", onOpenHistory)
+                    NeonFlatIcon(NeonIcons.Settings, "Impostazioni", onOpenSettings)
+                }
+            }
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 // Immagine di sfondo, fissa: le schede scorrono sopra
                 HomeBackdrop(settings.headerImageUri, Modifier.align(Alignment.TopCenter))
@@ -117,16 +126,8 @@ fun HomeScreen(
                         .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
-            ) {
-                NeonIconButton(NeonIcons.History, "Storico", onOpenHistory)
-                NeonIconButton(NeonIcons.Settings, "Impostazioni", onOpenSettings)
-            }
-
             // Spazio in cui si vede l'auto sullo sfondo; il contatore del costo sta in basso a destra e scorre con la pagina
-            Box(modifier = Modifier.fillMaxWidth().height(116.dp), contentAlignment = Alignment.BottomEnd) {
+            Box(modifier = Modifier.fillMaxWidth().height(182.dp), contentAlignment = Alignment.BottomEnd) {
                 OdometerPrice(value = tripCost)
             }
 
