@@ -228,23 +228,26 @@ object WidgetRenderer {
         // in alto a sinistra: batteria, percentuale, autonomia e stato
         val bw = min(w * .25f, h * .44f)
         val top = pad * .55f
-        batteria(c, pad * .8f, top, bw, s.soc, s.limite, s.inCarica)
-        val tx = pad * .8f + bw + pad * .35f
+        val bx = pad * .8f
+        batteria(c, bx, top, bw, s.soc, s.limite, s.inCarica)
+        val tx = bx + bw + pad * .35f
         val big = min(h * .20f, w * .10f)
         val by = top + bw * .25f + big * .36f
         testo(c, (s.soc?.toString() ?: "—") + "%", tx, by, big, col, bold, glow = col)
-        testo(c, listOfNotNull(s.autonomiaKm?.let { "$it km" }, stato(s)).joinToString(" · "), pad * .8f, top + bw * .5f + sz * 1.35f, sz * 1.15f, if (s.inCarica) TEAL else TEXT, reg)
+        testo(c, s.autonomiaKm?.let { "$it km" } ?: "", tx, by + sz * 1.55f, sz * 1.3f, TEXT, bold)
+        testo(c, stato(s).uppercase(), tx, by + sz * 2.75f, sz * .85f, if (s.inCarica) TEAL else DIM, reg, spacing = .06f)
 
-        // in alto a destra: lucchetto, temperature, ora
+        // in alto a destra: lucchetto, scritta, temperature e ora a sinistra del lucchetto
         val lk = min(h * .19f, w * .09f)
         val lx = w - pad - lk * .5f; val ly = top + lk * .55f
         lucchetto(c, lx, ly, lk, s.bloccata)
-        testo(c, when (s.bloccata) { true -> "CHIUSA"; false -> "APERTA"; else -> "" }, lx - lk * .8f, ly + sz * .42f, sz * 1.15f,
+        val rx = lx - lk * .8f
+        testo(c, when (s.bloccata) { true -> "CHIUSA"; false -> "APERTA"; else -> "" }, rx, ly + sz * .42f, sz * 1.15f,
             when (s.bloccata) { false -> DANGER; else -> ICE }, bold, Paint.Align.RIGHT, spacing = .12f)
-        testo(c, listOfNotNull(s.tempInt?.let { f1(it) + "°" }, s.tempEst?.let { "fuori " + f1(it) + "°" }).joinToString(" · "), w - pad, top + lk * 1.1f + sz * 1.1f, sz, TEXT, reg, Paint.Align.RIGHT)
-        testo(c, ora(s.ts), w - pad, top + lk * 1.1f + sz * 2.35f, sz * .85f, Color.argb(150, 143, 161, 179), reg, Paint.Align.RIGHT)
+        testo(c, listOfNotNull(s.tempInt?.let { f1(it) + "°" }, s.tempEst?.let { "fuori " + f1(it) + "°" }).joinToString(" · "), rx, ly + sz * 1.87f, sz, TEXT, reg, Paint.Align.RIGHT)
+        testo(c, ora(s.ts), rx, ly + sz * 3.07f, sz * .85f, Color.argb(150, 143, 161, 179), reg, Paint.Align.RIGHT)
 
-        // richiami: pressioni accanto alle ruote (mozzi nella foto 1640 x 901)
+        // collegamenti dalla foto (punti nella foto 1640 x 901): ruote -> pressioni, pacco batteria -> batteria, portiera -> lucchetto
         if (img != null) {
             fun pt(px: Float, py: Float) = Pair(ix + px * iw / 1640f, iy + py * ih / 901f)
             val g = s.gomme
@@ -252,26 +255,30 @@ object WidgetRenderer {
             fun valTxt(a: Double?, b: Double?) = if (a == null && b == null) "—" else f1(a) + " · " + f1(b) + " bar"
             richiamo(c, pt(712f, 610f), Pair(w * .05f + pad * .3f, h - pad * .35f), "ANTERIORI", valTxt(g.getOrNull(0), g.getOrNull(1)), warn(g.getOrNull(0), g.getOrNull(1)), sz, reg, bold, Paint.Align.LEFT)
             richiamo(c, pt(1500f, 542f), Pair(w * .95f - pad * .3f, h - pad * .35f), "POSTERIORI", valTxt(g.getOrNull(2), g.getOrNull(3)), warn(g.getOrNull(2), g.getOrNull(3)), sz, reg, bold, Paint.Align.RIGHT)
+            val pk = pt(1050f, 560f); val bxc = bx + bw * .43f; val yb = h * .385f
+            stanghetta(c, listOf(pk, Pair(pk.first, yb), Pair(bxc, yb), Pair(bxc, top + bw * .42f + sz * .3f)), sz)
+            val dr = pt(1105f, 352f); val yd = h * .405f
+            stanghetta(c, listOf(dr, Pair(dr.first, yd), Pair(lx, yd), Pair(lx, ly + lk * .6f)), sz)
         }
         return bmp
     }
 
-    /** Anello azzurro luminoso sul punto, linea sottile, etichetta (titolo piccolo + valore) */
+    /** Linea sottile luminosa con un pallino piccolo a ciascuna estremità */
+    private fun stanghetta(c: Canvas, pts: List<Pair<Float, Float>>, sz: Float, warn: Boolean = false) {
+        val ln = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE; strokeWidth = max(1.5f, sz * .09f); strokeJoin = Paint.Join.ROUND
+            color = Color.argb(215, 238, 243, 248); setShadowLayer(sz * .25f, 0f, 0f, if (warn) DANGER else GLOW)
+        }
+        val path = Path().apply { moveTo(pts[0].first, pts[0].second); for (p in pts.drop(1)) lineTo(p.first, p.second) }
+        c.drawPath(path, ln)
+        val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = if (warn) Color.rgb(255, 179, 186) else Color.WHITE; setShadowLayer(sz * .3f, 0f, 0f, if (warn) DANGER else GLOW) }
+        for (p in listOf(pts.first(), pts.last())) c.drawCircle(p.first, p.second, max(2.5f, sz * .16f), dot)
+    }
+
+    /** Ruota -> etichetta in basso: stanghetta verticale e poi orizzontale, titolo piccolo e valore */
     private fun richiamo(c: Canvas, dot: Pair<Float, Float>, end: Pair<Float, Float>, titolo: String, valore: String, warn: Boolean, sz: Float, reg: Typeface, bold: Typeface, align: Paint.Align) {
-        val ring = if (warn) Color.rgb(255, 179, 186) else RING
-        val glow = if (warn) DANGER else GLOW
-        val r = sz * .75f
-        val ln = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(215, 238, 243, 248); strokeWidth = max(1.5f, sz * .09f); setShadowLayer(sz * .25f, 0f, 0f, GLOW) }
-        // linea: dal bordo dell'anello verso la riga dell'etichetta, poi in orizzontale
         val kx = end.first; val ky = end.second - sz * 2.6f
-        c.drawLine(dot.first, dot.second + r, dot.first, ky, ln)
-        c.drawLine(dot.first, ky, kx, ky, ln)
-        c.drawCircle(kx, ky, sz * .14f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = TEXT })
-        val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(28, 173, 222, 255) }
-        c.drawCircle(dot.first, dot.second, r * 1.8f, halo)
-        val rp = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = r * .32f; color = ring; setShadowLayer(r * .9f, 0f, 0f, glow) }
-        c.drawCircle(dot.first, dot.second, r, rp)
-        c.drawCircle(dot.first, dot.second, r * .38f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; setShadowLayer(r * .5f, 0f, 0f, GLOW) })
+        stanghetta(c, listOf(dot, Pair(dot.first, ky), Pair(kx, ky)), sz, warn)
         testo(c, titolo, kx, ky + sz * 1.25f, sz * .82f, Color.argb(200, 201, 232, 249), reg, align, spacing = .14f)
         testo(c, valore, kx, ky + sz * 2.55f, sz * 1.25f, if (warn) Color.rgb(255, 154, 163) else Color.WHITE, bold, align)
     }
