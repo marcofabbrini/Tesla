@@ -71,7 +71,7 @@ fun WidgetSettingsCard() {
             Text(esito, modifier = Modifier.padding(top = 10.dp), color = Neon.TextDim, fontSize = 12.sp)
         }
         Text(
-            "Poi tieni premuto sulla schermata Home › Widget › Tesla Charge Cost. Tocca un widget per aggiornarlo.",
+            "Poi tieni premuto sulla schermata Home › Widget › Tesla Charge Cost. Tocca l'immagine per aggiornare. I pulsanti del widget grande mandano i comandi tramite Home Assistant; per aprire l'auto tocca due volte.",
             modifier = Modifier.padding(top = 10.dp), color = Neon.TextDim, fontSize = 12.sp,
         )
     }

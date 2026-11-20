@@ -25,7 +25,14 @@ data class TeslaStato(
     val sentinella: Boolean?,
     val casa: Boolean,
     val ts: Long?,
+    val clima: Boolean? = null,
+    /** ultimo comando dai widget: cmd, stato (in_coda, inviato, ok, errore, nessuna_risposta), ts */
+    val comando: Comando? = null,
 )
+
+data class Comando(val cmd: String, val stato: String, val ts: Long?) {
+    val inCorso get() = stato == "in_coda" || stato == "inviato"
+}
 
 /** Impostazioni e cache dei widget (SharedPreferences: leggibili subito anche dal widget) */
 object WidgetPrefs {
@@ -42,6 +49,16 @@ object WidgetPrefs {
     fun salva(ctx: Context, sito: String, chiave: String) {
         prefs(ctx).edit().putString("sito", sito.trim().trimEnd('/')).putString("chiave", chiave.trim()).apply()
     }
+
+    /** Sblocco: il primo tocco «arma», il secondo entro 6 secondi invia */
+    fun armato(ctx: Context): Boolean = System.currentTimeMillis() - prefs(ctx).getLong("armato", 0) < 6000
+    fun arma(ctx: Context, on: Boolean) { prefs(ctx).edit().putLong("armato", if (on) System.currentTimeMillis() else 0).apply() }
+    /** Pulsante premuto in attesa di conferma (per mostrarlo acceso in ambra) */
+    fun attesa(ctx: Context): String? {
+        val p = prefs(ctx)
+        return if (System.currentTimeMillis() - p.getLong("attesa_ts", 0) < 60000) p.getString("attesa", null) else null
+    }
+    fun setAttesa(ctx: Context, btn: String?) { prefs(ctx).edit().putString("attesa", btn).putLong("attesa_ts", if (btn == null) 0 else System.currentTimeMillis()).apply() }
 
     fun salvaCache(ctx: Context, json: String?, esito: String) {
         val e = prefs(ctx).edit().putString("esito", esito)
@@ -81,6 +98,28 @@ object TeslaApi {
         return parse(WidgetPrefs.cache(ctx))
     }
 
+    /** Mette in coda un comando sul sito (lo esegue Home Assistant). Restituisce null se va bene, altrimenti il messaggio. */
+    fun invia(ctx: Context, comando: String): String? {
+        val chiave = WidgetPrefs.chiave(ctx)
+        if (!Regex("^[a-f0-9]{48}$").matches(chiave)) return "Chiave mancante"
+        var con: HttpURLConnection? = null
+        return try {
+            con = URL(WidgetPrefs.sito(ctx) + "/api/tesla-widget.php").openConnection() as HttpURLConnection
+            con.connectTimeout = 12000
+            con.readTimeout = 15000
+            con.requestMethod = "POST"
+            con.doOutput = true
+            con.setRequestProperty("Authorization", "Bearer $chiave")
+            con.setRequestProperty("Content-Type", "application/json")
+            con.outputStream.use { it.write(JSONObject().put("comando", comando).toString().toByteArray()) }
+            when (con.responseCode) { 200 -> null; 401 -> "Chiave non valida"; 429 -> "Troppi comandi in attesa"; else -> "Errore del sito (${con.responseCode})" }
+        } catch (e: Exception) {
+            "Sito non raggiungibile"
+        } finally {
+            con?.disconnect()
+        }
+    }
+
     fun parse(json: String?): TeslaStato? {
         if (json.isNullOrBlank()) return null
         return try {
@@ -99,6 +138,10 @@ object TeslaApi {
                 km = i("km"), gomme = gomme, tempInt = d("temp_int"), tempEst = d("temp_est"),
                 bloccata = b("bloccata"), sentinella = b("sentinella"), casa = o.optBoolean("casa"),
                 ts = runCatching { Instant.parse(o.getString("ts")).toEpochMilli() }.getOrNull(),
+                clima = b("clima"),
+                comando = o.optJSONObject("comando")?.let { c ->
+                    Comando(c.optString("cmd"), c.optString("stato"), runCatching { Instant.parse(c.getString("ts")).toEpochMilli() }.getOrNull())
+                },
             )
         } catch (e: Exception) {
             null

@@ -170,12 +170,12 @@ object WidgetRenderer {
     }
 
     /** Widget grande: foto dell'auto, batteria, pressioni accanto alle ruote, stato */
-    fun grande(ctx: Context, s: TeslaStato?, esito: String, wPx: Int, hPx: Int): Bitmap {
+    fun grande(ctx: Context, s: TeslaStato?, esito: String, wPx: Int, hPx: Int, sfondo: Boolean = true): Bitmap {
         val w = wPx.coerceIn(300, 1000); val h = (hPx * w / wPx.toFloat()).roundToInt().coerceIn(150, 1000)
         if (s == null) return messaggio(ctx, w, h, if (esito.isBlank()) "Apri l'app Tesla Charge Cost > Impostazioni e collega il widget." else esito)
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888); val c = Canvas(bmp)
         val rad = min(w, h) * .09f
-        fondo(c, w.toFloat(), h.toFloat(), rad)
+        if (sfondo) fondo(c, w.toFloat(), h.toFloat(), rad)
         val bold = font(ctx, true); val reg = font(ctx, false)
         val col = socColor(s.soc)
         val pad = min(w, h) * .07f
@@ -194,6 +194,7 @@ object WidgetRenderer {
             fade.shader = LinearGradient(ix, 0f, ix + iw * .12f, 0f, BG2, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix, iy, ix + iw * .12f, iy + ih, fade)
             fade.shader = LinearGradient(ix + iw, 0f, ix + iw * .88f, 0f, BG2, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix + iw * .88f, iy, ix + iw, iy + ih, fade)
             fade.shader = LinearGradient(0f, iy, 0f, iy + ih * .2f, Color.rgb(9, 14, 24), Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix, iy, ix + iw, iy + ih * .2f, fade)
+            fade.shader = LinearGradient(0f, iy + ih, 0f, iy + ih * .85f, BG2, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix, iy + ih * .85f, ix + iw, iy + ih, fade)
             c.restore()
         }
 
@@ -211,15 +212,25 @@ object WidgetRenderer {
         testo(c, when (s.bloccata) { true -> "CHIUSA"; false -> "APERTA"; else -> "" }, dx, pad * .7f + sz * 1.6f, sz * 1.15f, if (s.bloccata == false) DANGER else ICE, reg, Paint.Align.RIGHT, spacing = .12f)
         testo(c, listOfNotNull(s.tempInt?.let { f1(it) + "° dentro" }, s.tempEst?.let { f1(it) + "° fuori" }).joinToString(" · "), dx, pad * .7f + sz * 3.1f, sz, DIM, reg, Paint.Align.RIGHT)
         testo(c, ora(s.ts), dx, pad * .7f + sz * 4.5f, sz * .9f, Color.argb(150, 143, 161, 179), reg, Paint.Align.RIGHT)
+        val cm = s.comando
+        if (cm != null && cm.ts != null && System.currentTimeMillis() - cm.ts < 5 * 60000) {
+            val (t, col2) = when (cm.stato) {
+                "in_coda", "inviato" -> nomeComando(cm.cmd) + " · in corso…" to ACCENT
+                "ok" -> nomeComando(cm.cmd) + " · fatto" to TEAL
+                "errore" -> nomeComando(cm.cmd) + " · non riuscito" to DANGER
+                else -> nomeComando(cm.cmd) + " · nessuna risposta" to DANGER
+            }
+            testo(c, t, dx, pad * .7f + sz * 5.9f, sz * .95f, col2, reg, Paint.Align.RIGHT)
+        }
 
-        // richiami: pressioni accanto alle ruote (coordinate della foto 1320 x 610)
+        // richiami: pressioni accanto alle ruote (coordinate della foto 1580 x 690)
         if (img != null) {
-            fun pt(px: Float, py: Float) = Pair(ix + px * iw / 1320f, iy + py * ih / 610f)
+            fun pt(px: Float, py: Float) = Pair(ix + px * iw / 1580f, iy + py * ih / 690f)
             val g = s.gomme
             fun warn(a: Double?, b: Double?) = (a != null && a < 2.6) || (b != null && b < 2.6)
             fun valTxt(a: Double?, b: Double?) = if (a == null && b == null) "—" else f1(a) + " · " + f1(b) + " bar"
-            richiamo(c, pt(570f, 407f), Pair(w * .14f, h - pad * .55f), "ANTERIORI", valTxt(g.getOrNull(0), g.getOrNull(1)), warn(g.getOrNull(0), g.getOrNull(1)), sz, reg, bold, Paint.Align.LEFT)
-            richiamo(c, pt(1135f, 353f), Pair(w * .86f, h - pad * .55f), "POSTERIORI", valTxt(g.getOrNull(2), g.getOrNull(3)), warn(g.getOrNull(2), g.getOrNull(3)), sz, reg, bold, Paint.Align.RIGHT)
+            richiamo(c, pt(650f, 495f), Pair(w * .14f, h - pad * .55f), "ANTERIORI", valTxt(g.getOrNull(0), g.getOrNull(1)), warn(g.getOrNull(0), g.getOrNull(1)), sz, reg, bold, Paint.Align.LEFT)
+            richiamo(c, pt(1415f, 432f), Pair(w * .86f, h - pad * .55f), "POSTERIORI", valTxt(g.getOrNull(2), g.getOrNull(3)), warn(g.getOrNull(2), g.getOrNull(3)), sz, reg, bold, Paint.Align.RIGHT)
         }
         return bmp
     }
@@ -242,5 +253,81 @@ object WidgetRenderer {
         c.drawCircle(dot.first, dot.second, r * .38f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; setShadowLayer(r * .5f, 0f, 0f, GLOW) })
         testo(c, titolo, kx, ky + sz * 1.25f, sz * .82f, Color.argb(200, 201, 232, 249), reg, align, spacing = .14f)
         testo(c, valore, kx, ky + sz * 2.55f, sz * 1.25f, if (warn) Color.rgb(255, 154, 163) else Color.WHITE, bold, align)
+    }
+
+    fun nomeComando(c: String) = when (c) {
+        "blocca" -> "Chiusura"; "sblocca" -> "Apertura"; "fari" -> "Fari"; "clima_on" -> "Clima acceso"; "clima_off" -> "Clima spento"
+        "sportello" -> "Sportello"; "sentinella_on" -> "Sentinella attiva"; "sentinella_off" -> "Sentinella spenta"; else -> c
+    }
+
+    /** Pulsante dei comandi: vetro scuro, icona e scritta. stato: 0 normale, 1 attivo (azzurro), 2 in corso (ambra), 3 da confermare (rosso) */
+    fun pulsante(ctx: Context, tipo: String, etichetta: String, stato: Int, wPx: Int, hPx: Int): Bitmap {
+        val w = wPx.coerceIn(60, 400); val h = hPx.coerceIn(50, 300)
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888); val c = Canvas(bmp)
+        val col = when (stato) { 1 -> Color.rgb(127, 214, 255); 2 -> ACCENT; 3 -> DANGER; else -> ICE }
+        val m = min(w, h) * .06f
+        val box = RectF(m, m, w - m, h - m)
+        val r = min(w, h) * .26f
+        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = LinearGradient(0f, 0f, 0f, h.toFloat(), Color.rgb(20, 29, 46), Color.rgb(8, 12, 20), Shader.TileMode.CLAMP)
+        }
+        c.drawRoundRect(box, r, r, bg)
+        val br = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE; strokeWidth = max(1.5f, min(w, h) * .025f)
+            color = if (stato == 0) Color.argb(60, 201, 232, 249) else col
+            if (stato != 0) setShadowLayer(min(w, h) * .08f, 0f, 0f, col)
+        }
+        c.drawRoundRect(box, r, r, br)
+        val labH = h * .24f
+        val isz = min(w * .42f, (h - labH) * .52f)
+        icona(c, tipo, w / 2f, m + (h - 2 * m - labH) * .55f, isz, if (stato == 0) Color.rgb(233, 238, 243) else col, stato != 0)
+        testo(c, etichetta.uppercase(), w / 2f, h - m - labH * .38f, min(labH * .62f, w * .13f), if (stato == 0) DIM else col, font(ctx, false), Paint.Align.CENTER, spacing = .06f)
+        return bmp
+    }
+
+    /** Icone semplici su griglia 24 x 24 centrata in (cx, cy), lato s */
+    private fun icona(c: Canvas, tipo: String, cx: Float, cy: Float, s: Float, col: Int, glow: Boolean) {
+        val k = s / 24f
+        fun X(v: Float) = cx + (v - 12f) * k
+        fun Y(v: Float) = cy + (v - 12f) * k
+        val st = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE; strokeWidth = 2f * k; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND; color = col
+            if (glow) setShadowLayer(3f * k, 0f, 0f, col)
+        }
+        val fi = Paint(st).apply { style = Paint.Style.FILL }
+        when (tipo) {
+            "chiusa", "aperta" -> {
+                c.drawRoundRect(RectF(X(5f), Y(11f), X(19f), Y(21f)), 2.5f * k, 2.5f * k, st)
+                c.drawCircle(X(12f), Y(15.5f), 1.4f * k, fi)
+                val a = Path()
+                if (tipo == "chiusa") { a.moveTo(X(8f), Y(11f)); a.lineTo(X(8f), Y(7.5f)); a.cubicTo(X(8f), Y(2.5f), X(16f), Y(2.5f), X(16f), Y(7.5f)); a.lineTo(X(16f), Y(11f)) }
+                else { a.moveTo(X(8f), Y(11f)); a.lineTo(X(8f), Y(7.5f)); a.cubicTo(X(8f), Y(2.5f), X(16f), Y(2.5f), X(16f), Y(6.5f)) }
+                c.drawPath(a, st)
+            }
+            "fari" -> {
+                val p = Path().apply { moveTo(X(11f), Y(5f)); cubicTo(X(4f), Y(5f), X(4f), Y(19f), X(11f), Y(19f)); close() }
+                c.drawPath(p, st)
+                for (yy in floatArrayOf(7f, 10.3f, 13.7f, 17f)) c.drawLine(X(14f), Y(yy), X(21f), Y(yy + 1.2f), st)
+            }
+            "clima" -> {
+                c.drawCircle(X(12f), Y(12f), 1.8f * k, fi)
+                for (i in 0 until 3) {
+                    c.save(); c.rotate(i * 120f, X(12f), Y(12f))
+                    val p = Path().apply { moveTo(X(12f), Y(10f)); cubicTo(X(9f), Y(7f), X(9f), Y(3f), X(12.5f), Y(3f)); cubicTo(X(16f), Y(3f), X(15.5f), Y(7f), X(13.6f), Y(10.6f)) }
+                    c.drawPath(p, st); c.restore()
+                }
+            }
+            "sportello" -> {
+                c.drawRoundRect(RectF(X(4f), Y(4f), X(20f), Y(20f)), 4f * k, 4f * k, st)
+                val b = Path().apply { moveTo(X(13.5f), Y(6.5f)); lineTo(X(8.5f), Y(13f)); lineTo(X(12f), Y(13f)); lineTo(X(10.5f), Y(17.5f)); lineTo(X(15.5f), Y(11f)); lineTo(X(12f), Y(11f)); close() }
+                c.drawPath(b, fi)
+            }
+            "sentinella" -> {
+                val p = Path().apply { moveTo(X(2.5f), Y(12f)); cubicTo(X(6f), Y(5.5f), X(18f), Y(5.5f), X(21.5f), Y(12f)); cubicTo(X(18f), Y(18.5f), X(6f), Y(18.5f), X(2.5f), Y(12f)); close() }
+                c.drawPath(p, st)
+                c.drawCircle(X(12f), Y(12f), 3.2f * k, st)
+                c.drawCircle(X(12f), Y(12f), 1.2f * k, fi)
+            }
+        }
     }
 }
