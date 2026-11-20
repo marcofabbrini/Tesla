@@ -98,9 +98,7 @@ app/src/main/java/com/marcofabbrini/teslachargecost/
 Due widget leggono lo stato della Tesla da marcofabbrini.com (dati inviati da Home Assistant):
 
 - **Tesla · Batteria** (3×1): batteria a segmenti rosso→verde, percentuale, autonomia, stato della ricarica.
-- **Tesla · Stato auto** (4×3): foto dell'auto con le pressioni accanto alle ruote, batteria, chiusura e temperature,
-  più i pulsanti Apri/Chiudi (doppio tocco per aprire), Fari, Clima, Sportello, Sentinella. I comandi passano dal sito
-  e li esegue Home Assistant (modello «Tesla: comandi dai widget»).
+- **Tesla · Stato auto** (4×2): foto dell'auto con le pressioni accanto alle ruote, batteria, chiusura e temperature.
 
 Collegamento: sul sito apri *Auto › Tesla › Tecnica › Collegamento › Chiave per l'app Android*, poi incolla la chiave in
 *Impostazioni › Widget* nell'app. I widget si aggiornano ogni 15 minuti circa e quando li tocchi.

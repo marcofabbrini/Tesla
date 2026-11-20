@@ -157,32 +157,12 @@ class TeslaBatteryWidget : TeslaWidgetBase() {
 }
 
 class TeslaStatusWidget : TeslaWidgetBase() {
-    override val dimDefault = 360 to 260
-
+    override val dimDefault = 360 to 220
     override fun viste(ctx: Context, s: TeslaStato?, esito: String, wDp: Int, hDp: Int): RemoteViews {
-        val barDp = 58
-        val (w, h) = scala(px(ctx, wDp), px(ctx, (hDp - barDp).coerceAtLeast(90)))
-        val rv = RemoteViews(ctx.packageName, R.layout.widget_controls)
-        rv.setImageViewBitmap(R.id.widget_img, WidgetRenderer.grande(ctx, s, esito, w, h, sfondo = false))
-
-        val attesa = WidgetPrefs.attesa(ctx)
-        val bw = px(ctx, (wDp - 12) / 5); val bh = px(ctx, barDp - 6)
-        fun st(btn: String, attivo: Boolean) = if (attesa == btn) 2 else if (attivo) 1 else 0
-        val armato = WidgetPrefs.armato(ctx)
-        val chiusa = s?.bloccata != false
-        val voci = listOf(
-            Triple(R.id.btn_serratura, "serratura", Triple(if (chiusa) "chiusa" else "aperta", if (armato) "Conferma" else if (chiusa) "Apri" else "Chiudi",
-                if (armato) 3 else st("serratura", !chiusa))),
-            Triple(R.id.btn_fari, "fari", Triple("fari", "Fari", st("fari", false))),
-            Triple(R.id.btn_clima, "clima", Triple("clima", "Clima", st("clima", s?.clima == true))),
-            Triple(R.id.btn_sportello, "sportello", Triple("sportello", "Sportello", st("sportello", false))),
-            Triple(R.id.btn_sentinella, "sentinella", Triple("sentinella", "Sentinella", st("sentinella", s?.sentinella == true))),
-        )
-        voci.forEachIndexed { i, (vid, btn, d) ->
-            rv.setImageViewBitmap(vid, WidgetRenderer.pulsante(ctx, d.first, d.second, d.third, bw, bh))
-            rv.setOnClickPendingIntent(vid, broadcast(ctx, ACTION_CMD, btn, 10 + i))
+        val (w, h) = scala(px(ctx, wDp), px(ctx, hDp))
+        return RemoteViews(ctx.packageName, R.layout.widget_image).apply {
+            setImageViewBitmap(R.id.widget_img, WidgetRenderer.grande(ctx, s, esito, w, h))
         }
-        return rv
     }
 }
 
