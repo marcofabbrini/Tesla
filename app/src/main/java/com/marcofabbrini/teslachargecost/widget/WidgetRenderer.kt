@@ -150,7 +150,17 @@ object WidgetRenderer {
         return bmp
     }
 
-    /** Widget piccolo: batteria, percentuale, autonomia, stato */
+    /** Lucchetto chiuso (azzurro) o aperto (rosso); null = stato non noto */
+    fun lucchetto(c: Canvas, cx: Float, cy: Float, size: Float, chiusa: Boolean?) {
+        val col = when (chiusa) { true -> Color.rgb(127, 214, 255); false -> DANGER; else -> DIM }
+        val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = RadialGradient(cx, cy, size * .9f, Color.argb(if (chiusa == null) 0 else 60, Color.red(col), Color.green(col), Color.blue(col)), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        }
+        c.drawCircle(cx, cy, size * .9f, halo)
+        icona(c, if (chiusa == false) "aperta" else "chiusa", cx, cy, size, col, chiusa != null)
+    }
+
+    /** Widget piccolo: batteria, percentuale, autonomia, stato, lucchetto */
     fun piccolo(ctx: Context, s: TeslaStato?, esito: String, wPx: Int, hPx: Int): Bitmap {
         val w = wPx.coerceIn(200, 900); val h = (hPx * w / wPx.toFloat()).roundToInt().coerceIn(100, 900)
         if (s == null) return messaggio(ctx, w, h, if (esito.isBlank()) "Apri l'app Tesla Charge Cost > Impostazioni e collega il widget." else esito)
@@ -158,79 +168,90 @@ object WidgetRenderer {
         fondo(c, w.toFloat(), h.toFloat(), min(w, h) * .14f)
         val bold = font(ctx, true); val reg = font(ctx, false)
         val col = socColor(s.soc)
-        val bw = min(w * .44f, h * 1.25f)
-        batteria(c, w * .05f, h * .5f - bw * .5f + bw * .02f, bw, s.soc, s.limite, s.inCarica)
-        val tx = w * .05f + bw + w * .05f
-        val big = min(h * .40f, (w - tx) * .42f)
-        testo(c, (s.soc?.toString() ?: "—") + "%", tx, h * .5f + big * .1f, big, col, bold, glow = col)
-        testo(c, (s.autonomiaKm?.let { "$it km" } ?: ""), tx, h * .5f + big * .1f + big * .55f, big * .42f, TEXT, reg)
-        testo(c, stato(s).uppercase(), tx, h * .5f - big * .82f, big * .26f, if (s.inCarica) TEAL else DIM, reg, spacing = .08f)
-        testo(c, ora(s.ts), w - w * .05f, h - h * .08f, min(h * .09f, w * .04f), Color.argb(150, 143, 161, 179), reg, Paint.Align.RIGHT)
+        val pad = min(w, h) * .09f
+        val bw = min(w * .36f, h * 1.2f)
+        batteria(c, pad * .7f, h * .5f - bw * .25f, bw, s.soc, s.limite, s.inCarica)
+        val tx = pad * .7f + bw + w * .035f
+        val lk = min(h * .34f, w * .11f)
+        val big = min(h * .50f, (w - tx - lk - pad) * .48f)
+        testo(c, stato(s).uppercase(), tx, h * .5f - big * .72f, big * .30f, if (s.inCarica) TEAL else DIM, reg, spacing = .06f)
+        testo(c, (s.soc?.toString() ?: "—") + "%", tx, h * .5f + big * .32f, big, col, bold, glow = col)
+        testo(c, s.autonomiaKm?.let { "$it km" } ?: "", tx, h * .5f + big * .32f + big * .52f, big * .40f, TEXT, reg)
+        lucchetto(c, w - pad - lk * .5f, h * .5f - lk * .2f, lk, s.bloccata)
+        testo(c, ora(s.ts), w - pad * .8f, h - h * .07f, min(h * .10f, w * .042f), Color.argb(150, 143, 161, 179), reg, Paint.Align.RIGHT)
         return bmp
     }
 
-    /** Widget grande: foto dell'auto, batteria, pressioni accanto alle ruote, stato */
+    /** Widget grande: auto su fondo scuro con riflesso a terra, batteria, lucchetto, pressioni accanto alle ruote */
     fun grande(ctx: Context, s: TeslaStato?, esito: String, wPx: Int, hPx: Int, sfondo: Boolean = true): Bitmap {
         val w = wPx.coerceIn(300, 1000); val h = (hPx * w / wPx.toFloat()).roundToInt().coerceIn(150, 1000)
         if (s == null) return messaggio(ctx, w, h, if (esito.isBlank()) "Apri l'app Tesla Charge Cost > Impostazioni e collega il widget." else esito)
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888); val c = Canvas(bmp)
-        val rad = min(w, h) * .09f
-        if (sfondo) fondo(c, w.toFloat(), h.toFloat(), rad)
+        val wf = w.toFloat(); val hf = h.toFloat()
+        if (sfondo) fondo(c, wf, hf, min(w, h) * .09f)
         val bold = font(ctx, true); val reg = font(ctx, false)
         val col = socColor(s.soc)
-        val pad = min(w, h) * .07f
+        val pad = min(w, h) * .065f
+        val sz = min(h * .068f, w * .036f)
 
-        // auto: in basso, centrata, con i bordi sfumati nel fondo
+        // auto con riflesso: la foto (1640 x 901) ha lo sfondo trasparente; la ruota anteriore tocca terra all'85% dell'altezza
         val img = carBitmap(ctx)
         var ix = 0f; var iy = 0f; var iw = 0f; var ih = 0f
         if (img != null) {
-            ih = h * .64f; iw = ih * img.width / img.height
-            if (iw > w * .92f) { iw = w * .92f; ih = iw * img.height / img.width }
-            ix = (w - iw) / 2f; iy = h - ih - h * .1f
-            c.save(); c.clipRect(RectF(2f, 2f, w - 2f, h - 2f))
-            c.drawBitmap(img, null, RectF(ix, iy, ix + iw, iy + ih), Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
-            // sfumatura dei bordi della foto
-            val fade = Paint(Paint.ANTI_ALIAS_FLAG)
-            fade.shader = LinearGradient(ix, 0f, ix + iw * .12f, 0f, BG2, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix, iy, ix + iw * .12f, iy + ih, fade)
-            fade.shader = LinearGradient(ix + iw, 0f, ix + iw * .88f, 0f, BG2, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix + iw * .88f, iy, ix + iw, iy + ih, fade)
-            fade.shader = LinearGradient(0f, iy, 0f, iy + ih * .2f, Color.rgb(9, 14, 24), Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix, iy, ix + iw, iy + ih * .2f, fade)
-            fade.shader = LinearGradient(0f, iy + ih, 0f, iy + ih * .85f, BG2, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix, iy + ih * .85f, ix + iw, iy + ih, fade)
+            ih = h * .68f; iw = ih * img.width / img.height
+            if (iw > w * .95f) { iw = w * .95f; ih = iw * img.height / img.width }
+            ix = (w - iw) / 2f
+            val terra = h * .87f
+            iy = terra - ih * .85f
+            val dst = RectF(ix, iy, ix + iw, iy + ih)
+            c.save(); c.clipRect(RectF(2f, 2f, wf - 2f, hf - 2f))
+            // alone sul pavimento
+            c.save(); c.scale(1f, .16f, wf / 2f, terra)
+            c.drawCircle(wf / 2f, terra, iw * .55f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                shader = RadialGradient(wf / 2f, terra, iw * .55f, Color.argb(70, 150, 205, 255), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+            })
+            c.restore()
+            // riflesso: foto capovolta sulla linea di terra, che sfuma verso il basso
+            val layer = c.saveLayer(0f, terra, wf, hf, null)
+            c.save(); c.scale(1f, -1f, 0f, terra)
+            c.drawBitmap(img, null, dst, Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG).apply { alpha = 80 })
+            c.restore()
+            c.drawRect(0f, terra, wf, hf, Paint().apply {
+                shader = LinearGradient(0f, terra, 0f, terra + ih * .30f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP)
+                xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN)
+            })
+            c.restoreToCount(layer)
+            c.drawBitmap(img, null, dst, Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
             c.restore()
         }
 
         // in alto a sinistra: batteria, percentuale, autonomia e stato
-        val bw = min(w * .26f, h * .48f)
-        batteria(c, pad, pad * .7f, bw, s.soc, s.limite, s.inCarica)
-        val tx = pad + bw + pad * .5f
-        val big = min(h * .17f, w * .085f)
-        testo(c, (s.soc?.toString() ?: "—") + "%", tx, pad * .7f + bw * .36f + big * .35f, big, col, bold, glow = col)
-        testo(c, listOfNotNull(s.autonomiaKm?.let { "$it km" }, stato(s)).joinToString(" · "), tx, pad * .7f + bw * .36f + big * .35f + big * .55f, big * .36f, if (s.inCarica) TEAL else TEXT, reg)
+        val bw = min(w * .25f, h * .44f)
+        val top = pad * .55f
+        batteria(c, pad * .8f, top, bw, s.soc, s.limite, s.inCarica)
+        val tx = pad * .8f + bw + pad * .35f
+        val big = min(h * .20f, w * .10f)
+        val by = top + bw * .25f + big * .36f
+        testo(c, (s.soc?.toString() ?: "—") + "%", tx, by, big, col, bold, glow = col)
+        testo(c, listOfNotNull(s.autonomiaKm?.let { "$it km" }, stato(s)).joinToString(" · "), pad * .8f, top + bw * .5f + sz * 1.35f, sz * 1.15f, if (s.inCarica) TEAL else TEXT, reg)
 
-        // in alto a destra: chiusura e temperatura
-        val sz = min(h * .055f, w * .028f)
-        val dx = w - pad
-        testo(c, when (s.bloccata) { true -> "CHIUSA"; false -> "APERTA"; else -> "" }, dx, pad * .7f + sz * 1.6f, sz * 1.15f, if (s.bloccata == false) DANGER else ICE, reg, Paint.Align.RIGHT, spacing = .12f)
-        testo(c, listOfNotNull(s.tempInt?.let { f1(it) + "° dentro" }, s.tempEst?.let { f1(it) + "° fuori" }).joinToString(" · "), dx, pad * .7f + sz * 3.1f, sz, DIM, reg, Paint.Align.RIGHT)
-        testo(c, ora(s.ts), dx, pad * .7f + sz * 4.5f, sz * .9f, Color.argb(150, 143, 161, 179), reg, Paint.Align.RIGHT)
-        val cm = s.comando
-        if (cm != null && cm.ts != null && System.currentTimeMillis() - cm.ts < 5 * 60000) {
-            val (t, col2) = when (cm.stato) {
-                "in_coda", "inviato" -> nomeComando(cm.cmd) + " · in corso…" to ACCENT
-                "ok" -> nomeComando(cm.cmd) + " · fatto" to TEAL
-                "errore" -> nomeComando(cm.cmd) + " · non riuscito" to DANGER
-                else -> nomeComando(cm.cmd) + " · nessuna risposta" to DANGER
-            }
-            testo(c, t, dx, pad * .7f + sz * 5.9f, sz * .95f, col2, reg, Paint.Align.RIGHT)
-        }
+        // in alto a destra: lucchetto, temperature, ora
+        val lk = min(h * .19f, w * .09f)
+        val lx = w - pad - lk * .5f; val ly = top + lk * .55f
+        lucchetto(c, lx, ly, lk, s.bloccata)
+        testo(c, when (s.bloccata) { true -> "CHIUSA"; false -> "APERTA"; else -> "" }, lx - lk * .8f, ly + sz * .42f, sz * 1.15f,
+            when (s.bloccata) { false -> DANGER; else -> ICE }, bold, Paint.Align.RIGHT, spacing = .12f)
+        testo(c, listOfNotNull(s.tempInt?.let { f1(it) + "°" }, s.tempEst?.let { "fuori " + f1(it) + "°" }).joinToString(" · "), w - pad, top + lk * 1.1f + sz * 1.1f, sz, TEXT, reg, Paint.Align.RIGHT)
+        testo(c, ora(s.ts), w - pad, top + lk * 1.1f + sz * 2.35f, sz * .85f, Color.argb(150, 143, 161, 179), reg, Paint.Align.RIGHT)
 
-        // richiami: pressioni accanto alle ruote (coordinate della foto 1580 x 690)
+        // richiami: pressioni accanto alle ruote (mozzi nella foto 1640 x 901)
         if (img != null) {
-            fun pt(px: Float, py: Float) = Pair(ix + px * iw / 1580f, iy + py * ih / 690f)
+            fun pt(px: Float, py: Float) = Pair(ix + px * iw / 1640f, iy + py * ih / 901f)
             val g = s.gomme
             fun warn(a: Double?, b: Double?) = (a != null && a < 2.6) || (b != null && b < 2.6)
             fun valTxt(a: Double?, b: Double?) = if (a == null && b == null) "—" else f1(a) + " · " + f1(b) + " bar"
-            richiamo(c, pt(650f, 495f), Pair(w * .14f, h - pad * .55f), "ANTERIORI", valTxt(g.getOrNull(0), g.getOrNull(1)), warn(g.getOrNull(0), g.getOrNull(1)), sz, reg, bold, Paint.Align.LEFT)
-            richiamo(c, pt(1415f, 432f), Pair(w * .86f, h - pad * .55f), "POSTERIORI", valTxt(g.getOrNull(2), g.getOrNull(3)), warn(g.getOrNull(2), g.getOrNull(3)), sz, reg, bold, Paint.Align.RIGHT)
+            richiamo(c, pt(712f, 610f), Pair(w * .05f + pad * .3f, h - pad * .35f), "ANTERIORI", valTxt(g.getOrNull(0), g.getOrNull(1)), warn(g.getOrNull(0), g.getOrNull(1)), sz, reg, bold, Paint.Align.LEFT)
+            richiamo(c, pt(1500f, 542f), Pair(w * .95f - pad * .3f, h - pad * .35f), "POSTERIORI", valTxt(g.getOrNull(2), g.getOrNull(3)), warn(g.getOrNull(2), g.getOrNull(3)), sz, reg, bold, Paint.Align.RIGHT)
         }
         return bmp
     }
