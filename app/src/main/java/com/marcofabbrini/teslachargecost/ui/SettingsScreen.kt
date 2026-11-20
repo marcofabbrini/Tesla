@@ -190,6 +190,8 @@ fun SettingsScreen(
                     fontSize = 12.sp,
                 )
             }
+
+            WidgetSettingsCard()
         }
     }
 }

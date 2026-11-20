@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Tesla Charge Cost</string>
+    <string name="widget_batteria">Tesla · Batteria</string>
+    <string name="widget_stato">Tesla · Stato auto</string>
+    <string name="widget_desc">Stato della Tesla da marcofabbrini.com. Tocca per aggiornare.</string>
+    <string name="widget_batteria_desc">Carica, autonomia e stato della ricarica</string>
+    <string name="widget_stato_desc">Auto, batteria, pressione delle gomme, chiusura e temperature</string>
 </resources>
