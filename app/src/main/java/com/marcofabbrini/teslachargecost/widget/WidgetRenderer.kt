@@ -41,6 +41,7 @@ object WidgetRenderer {
         if (car == null) car = runCatching { BitmapFactory.decodeResource(ctx.resources, R.drawable.widget_car) }.getOrNull()
         return car
     }
+    private fun tesla(ctx: Context): Typeface = runCatching { ctx.resources.getFont(R.font.tesla_title) }.getOrNull() ?: font(ctx, true)
     private fun font(ctx: Context, bold: Boolean): Typeface =
         runCatching { ctx.resources.getFont(if (bold) R.font.rajdhani_bold else R.font.rajdhani_semibold) }.getOrNull()
             ?: Typeface.create("sans-serif-condensed", if (bold) Typeface.BOLD else Typeface.NORMAL)
@@ -133,7 +134,37 @@ object WidgetRenderer {
         s.carica == "Disconnected" || s.carica.isEmpty() -> if (s.casa) "A casa · scollegata" else "Scollegata"
         else -> s.carica
     }
-    private fun ora(ts: Long?) = if (ts == null) "" else SimpleDateFormat("dd/MM HH:mm", Locale.ITALIAN).format(Date(ts))
+    private fun ora(ts: Long?): String {
+        if (ts == null) return ""
+        val oggi = SimpleDateFormat("yyyyMMdd", Locale.ITALIAN)
+        val stesso = oggi.format(Date(ts)) == oggi.format(Date())
+        return "Aggiornato " + SimpleDateFormat(if (stesso) "'alle' HH:mm" else "dd/MM 'alle' HH:mm", Locale.ITALIAN).format(Date(ts))
+    }
+    private val ORA = Color.argb(225, 214, 226, 238)
+
+    /** Cornice ambra sottile con angoli più spessi e luminosi (come le staffe agli angoli) */
+    fun cornice(c: Canvas, w: Float, h: Float, rad: Float) {
+        val m = min(w, h) * .022f
+        val r = RectF(m, m, w - m, h - m)
+        val rr = rad * .85f
+        val sottile = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = max(1.5f, min(w, h) * .006f); color = Color.argb(170, 231, 167, 101) }
+        c.drawRoundRect(r, rr, rr, sottile)
+        val spesso = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE; strokeWidth = max(3f, min(w, h) * .016f); strokeCap = Paint.Cap.ROUND; color = Color.rgb(236, 178, 104)
+            setShadowLayer(min(w, h) * .02f, 0f, 0f, Color.argb(150, 231, 167, 101))
+        }
+        val l = rr + min(w, h) * .05f
+        // un tratto per angolo: lato, curva, lato
+        fun ang(x0: Float, y0: Float, sx: Float, sy: Float) {
+            val p = Path()
+            p.moveTo(x0 + sx * l, y0)
+            p.lineTo(x0 + sx * rr, y0)
+            p.quadTo(x0, y0, x0, y0 + sy * rr)
+            p.lineTo(x0, y0 + sy * l)
+            c.drawPath(p, spesso)
+        }
+        ang(r.left, r.top, 1f, 1f); ang(r.right, r.top, -1f, 1f); ang(r.left, r.bottom, 1f, -1f); ang(r.right, r.bottom, -1f, -1f)
+    }
 
     private fun messaggio(ctx: Context, w: Int, h: Int, msg: String): Bitmap {
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888); val c = Canvas(bmp)
@@ -178,7 +209,8 @@ object WidgetRenderer {
         testo(c, (s.soc?.toString() ?: "—") + "%", tx, h * .5f + big * .32f, big, col, bold, glow = col)
         testo(c, s.autonomiaKm?.let { "$it km" } ?: "", tx, h * .5f + big * .32f + big * .52f, big * .40f, TEXT, reg)
         lucchetto(c, w - pad - lk * .5f, h * .5f - lk * .2f, lk, s.bloccata)
-        testo(c, ora(s.ts), w - pad * .8f, h - h * .07f, min(h * .10f, w * .042f), Color.argb(150, 143, 161, 179), reg, Paint.Align.RIGHT)
+        testo(c, ora(s.ts), w - pad * .8f, h - h * .09f, min(h * .11f, w * .045f), ORA, reg, Paint.Align.RIGHT)
+        cornice(c, w.toFloat(), h.toFloat(), min(w, h) * .14f)
         return bmp
     }
 
@@ -211,8 +243,6 @@ object WidgetRenderer {
             f.shader = LinearGradient(ix + iw, 0f, ix + iw * .90f, 0f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix + iw * .90f, iy, ix + iw + 1f, hf, f)
             c.restore()
         }
-        val b = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = max(1.5f, w / 400f); color = Color.argb(34, 201, 232, 249) }
-        c.drawRoundRect(RectF(1f, 1f, wf - 1f, hf - 1f), rad, rad, b)
 
         // in alto a sinistra: batteria, percentuale, autonomia e stato
         val bw = min(w * .25f, h * .44f)
@@ -228,13 +258,15 @@ object WidgetRenderer {
 
         // in alto a destra: lucchetto, scritta, temperature e ora a sinistra del lucchetto
         val lk = min(h * .19f, w * .09f)
-        val lx = w - pad - lk * .5f; val ly = top + lk * .55f
+        val lx = w - pad - lk * .5f
+        testo(c, "TESLA", w - pad, top + sz * .85f, sz * .8f, Color.argb(235, 233, 238, 243), tesla(ctx), Paint.Align.RIGHT, spacing = .35f)
+        val ly = top + sz * 1.5f + lk * .55f
         lucchetto(c, lx, ly, lk, s.bloccata)
         val rx = lx - lk * .8f
         testo(c, when (s.bloccata) { true -> "CHIUSA"; false -> "APERTA"; else -> "" }, rx, ly + sz * .42f, sz * 1.15f,
             when (s.bloccata) { false -> DANGER; else -> ICE }, bold, Paint.Align.RIGHT, spacing = .12f)
         testo(c, listOfNotNull(s.tempInt?.let { f1(it) + "°" }, s.tempEst?.let { "fuori " + f1(it) + "°" }).joinToString(" · "), rx, ly + sz * 1.87f, sz, TEXT, reg, Paint.Align.RIGHT)
-        testo(c, ora(s.ts), rx, ly + sz * 3.07f, sz * .85f, Color.argb(150, 143, 161, 179), reg, Paint.Align.RIGHT)
+        testo(c, ora(s.ts), rx, ly + sz * 3.2f, sz * .95f, ORA, reg, Paint.Align.RIGHT)
 
         // collegamenti dalla foto (punti nella foto 1672 x 941): ruote -> pressioni, pacco batteria -> batteria, portiera -> lucchetto
         if (img != null) {
@@ -242,11 +274,11 @@ object WidgetRenderer {
             val g = s.gomme
             fun warn(a: Double?, b: Double?) = (a != null && a < 2.6) || (b != null && b < 2.6)
             fun valTxt(a: Double?, b: Double?) = if (a == null && b == null) "—" else f1(a) + " · " + f1(b) + " bar"
-            richiamo(c, pt(710f, 605f), Pair(w * .05f + pad * .3f, h - pad * .35f), "ANTERIORI", valTxt(g.getOrNull(0), g.getOrNull(1)), warn(g.getOrNull(0), g.getOrNull(1)), sz, reg, bold, Paint.Align.LEFT)
-            richiamo(c, pt(1475f, 542f), Pair(w * .95f - pad * .3f, h - pad * .35f), "POSTERIORI", valTxt(g.getOrNull(2), g.getOrNull(3)), warn(g.getOrNull(2), g.getOrNull(3)), sz, reg, bold, Paint.Align.RIGHT)
-            stanghetta(c, percorso(pt(1040f, 560f), Pair(bx + bw * .43f, top + bw * .42f + sz * .3f), h * .40f), sz)
-            stanghetta(c, percorso(pt(1120f, 365f), Pair(lx, ly + lk * .6f), h * .40f), sz)
+            richiamo(c, pt(710f, 605f), Pair(w * .05f + pad * .3f, h - pad * .75f), "ANTERIORI", valTxt(g.getOrNull(0), g.getOrNull(1)), warn(g.getOrNull(0), g.getOrNull(1)), sz, reg, bold, Paint.Align.LEFT)
+            richiamo(c, pt(1475f, 542f), Pair(w * .95f - pad * .3f, h - pad * .75f), "POSTERIORI", valTxt(g.getOrNull(2), g.getOrNull(3)), warn(g.getOrNull(2), g.getOrNull(3)), sz, reg, bold, Paint.Align.RIGHT)
+            stanghetta(c, percorso(pt(1120f, 365f), Pair(lx, ly + lk * .6f), h * .42f), sz)
         }
+        cornice(c, wf, hf, rad)
         return bmp
     }
 
