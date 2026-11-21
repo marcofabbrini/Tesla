@@ -16,6 +16,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
+import android.net.Uri
+import android.os.PowerManager
+import android.provider.Settings
 import com.marcofabbrini.teslachargecost.widget.TeslaApi
 import com.marcofabbrini.teslachargecost.widget.TeslaWidgetsAll
 import com.marcofabbrini.teslachargecost.widget.WidgetPrefs
@@ -70,8 +74,27 @@ fun WidgetSettingsCard() {
         if (esito.isNotBlank()) {
             Text(esito, modifier = Modifier.padding(top = 10.dp), color = Neon.TextDim, fontSize = 12.sp)
         }
+        // Samsung mette a dormire le app: senza questo permesso i widget non si aggiornano da soli
+        val pm = ctx.getSystemService(android.content.Context.POWER_SERVICE) as PowerManager
+        var libera by remember { mutableStateOf(pm.isIgnoringBatteryOptimizations(ctx.packageName)) }
+        if (!libera) {
+            Text(
+                "Per l'aggiornamento automatico ogni 5 minuti lascia l'app libera dal risparmio batteria.",
+                modifier = Modifier.padding(top = 12.dp), color = Neon.TextDim, fontSize = 12.sp,
+            )
+            NeonButton(
+                label = "Consenti aggiornamento automatico",
+                onClick = {
+                    runCatching {
+                        ctx.startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + ctx.packageName)))
+                    }.onFailure { runCatching { ctx.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) } }
+                    libera = true
+                },
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
         Text(
-            "Poi tieni premuto sulla schermata Home › Widget › Tesla Charge Cost. Tocca un widget per aggiornarlo.",
+            "Poi tieni premuto sulla schermata Home › Widget › Tesla Charge Cost. Si aggiornano da soli ogni 5 minuti a schermo acceso; toccali per aggiornarli subito.",
             modifier = Modifier.padding(top = 10.dp), color = Neon.TextDim, fontSize = 12.sp,
         )
     }

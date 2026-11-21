@@ -18,7 +18,11 @@ abstract class TeslaWidgetBase : AppWidgetProvider() {
     abstract fun viste(ctx: Context, s: TeslaStato?, esito: String, wDp: Int, hDp: Int): RemoteViews
     abstract val dimDefault: Pair<Int, Int>
 
-    override fun onUpdate(ctx: Context, mgr: AppWidgetManager, ids: IntArray) = aggiornaAsync(ctx, ids, scarica = true)
+    override fun onUpdate(ctx: Context, mgr: AppWidgetManager, ids: IntArray) {
+        // arriva anche dopo un riavvio o un aggiornamento dell'app, quando Android cancella le sveglie: si riprogramma qui
+        programma(ctx)
+        aggiornaAsync(ctx, ids, scarica = true)
+    }
 
     override fun onAppWidgetOptionsChanged(ctx: Context, mgr: AppWidgetManager, id: Int, opt: Bundle) =
         aggiornaAsync(ctx, intArrayOf(id), scarica = false)
@@ -124,7 +128,8 @@ abstract class TeslaWidgetBase : AppWidgetProvider() {
         const val ACTION_REFRESH = "com.marcofabbrini.teslachargecost.WIDGET_REFRESH"
         const val ACTION_CMD = "com.marcofabbrini.teslachargecost.WIDGET_CMD"
         const val EXTRA_BTN = "btn"
-        private const val QUARTO = 15 * 60 * 1000L
+        /** Ogni 5 minuti. Sveglia «non urgente»: a schermo spento aspetta e scatta appena il telefono si riaccende. */
+        private const val INTERVALLO = 5 * 60 * 1000L
 
         /** Riduce le dimensioni in pixel a un massimo di 1000 px di larghezza, mantenendo le proporzioni */
         fun scala(wPx: Int, hPx: Int): Pair<Int, Int> {
@@ -138,7 +143,7 @@ abstract class TeslaWidgetBase : AppWidgetProvider() {
         }
         fun programma(ctx: Context) {
             val am = ctx.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            am.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + QUARTO, QUARTO, allarme(ctx))
+            am.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + INTERVALLO, allarme(ctx))
         }
         fun annulla(ctx: Context) {
             (ctx.getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(allarme(ctx))
@@ -166,9 +171,13 @@ class TeslaStatusWidget : TeslaWidgetBase() {
     }
 }
 
-/** Riceve l'allarme ogni 15 minuti (circa) e chiede l'aggiornamento di tutti i widget. */
+/** Riceve la sveglia ogni 5 minuti, programma la successiva e chiede l'aggiornamento di tutti i widget. */
 class TeslaWidgetTimer : android.content.BroadcastReceiver() {
-    override fun onReceive(ctx: Context, intent: Intent) = TeslaWidgetsAll.aggiornaTutti(ctx)
+    override fun onReceive(ctx: Context, intent: Intent) {
+        if (!TeslaWidgetsAll.attivi(ctx)) return
+        TeslaWidgetBase.programma(ctx)
+        TeslaWidgetsAll.aggiornaTutti(ctx)
+    }
 }
 
 object TeslaWidgetsAll {

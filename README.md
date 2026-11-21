@@ -101,4 +101,4 @@ Due widget leggono lo stato della Tesla da marcofabbrini.com (dati inviati da Ho
 - **Tesla · Stato auto** (4×4): batteria a sinistra; Tesla, chiusura, temperature e ora a destra; auto al centro; pressioni delle gomme in fondo.
 
 Collegamento: sul sito apri *Auto › Tesla › Tecnica › Collegamento › Chiave per l'app Android*, poi incolla la chiave in
-*Impostazioni › Widget* nell'app. I widget si aggiornano ogni 15 minuti circa e quando li tocchi.
+*Impostazioni › Widget* nell'app. I widget si aggiornano da soli ogni 5 minuti (a schermo acceso) e quando li tocchi; in Impostazioni › Widget conviene togliere l'app dal risparmio batteria.
