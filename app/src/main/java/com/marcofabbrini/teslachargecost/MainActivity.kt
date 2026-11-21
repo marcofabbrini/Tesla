@@ -14,6 +14,7 @@ import com.marcofabbrini.teslachargecost.data.Settings
 import com.marcofabbrini.teslachargecost.data.SettingsRepository
 import com.marcofabbrini.teslachargecost.data.TripRecord
 import com.marcofabbrini.teslachargecost.data.TripRepository
+import com.marcofabbrini.teslachargecost.ui.AggiornamentoDialog
 import com.marcofabbrini.teslachargecost.ui.AppFont
 import com.marcofabbrini.teslachargecost.ui.HistoryScreen
 import com.marcofabbrini.teslachargecost.ui.HomeScreen
@@ -65,6 +66,7 @@ class MainActivity : ComponentActivity() {
                         onBack = { screen = Screen.HOME },
                     )
                 }
+                AggiornamentoDialog()
             }
         }
     }
