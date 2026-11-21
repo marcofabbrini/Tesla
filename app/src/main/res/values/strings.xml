@@ -4,5 +4,9 @@
     <string name="widget_stato">Tesla · Stato auto</string>
     <string name="widget_desc">Stato della Tesla da marcofabbrini.com. Tocca per aggiornare.</string>
     <string name="widget_batteria_desc">Carica, autonomia e stato della ricarica</string>
+    <string name="widget_fv_piccolo">Fotovoltaico · Batteria e produzione</string>
+    <string name="widget_fv_grande">Fotovoltaico · Dettaglio impianti</string>
+    <string name="widget_fv_piccolo_desc">Carica della batteria e produzione attuale di CASA 22 e CASA M&amp;G</string>
+    <string name="widget_fv_grande_desc">Batteria, flussi di potenza, curva di oggi, ieri e mese dei due impianti</string>
     <string name="widget_stato_desc">Auto, batteria, pressione delle gomme, chiusura e temperature</string>
 </resources>

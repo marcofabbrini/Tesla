@@ -181,7 +181,9 @@ class TeslaWidgetTimer : android.content.BroadcastReceiver() {
 }
 
 object TeslaWidgetsAll {
-    private val classi = listOf(TeslaBatteryWidget::class.java, TeslaStatusWidget::class.java)
+    private val classi = listOf<Class<out AppWidgetProvider>>(
+        TeslaBatteryWidget::class.java, TeslaStatusWidget::class.java, FvSmallWidget::class.java, FvLargeWidget::class.java,
+    )
     fun attivi(ctx: Context): Boolean {
         val mgr = AppWidgetManager.getInstance(ctx)
         return classi.any { mgr.getAppWidgetIds(ComponentName(ctx, it)).isNotEmpty() }

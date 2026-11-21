@@ -25,16 +25,16 @@ import kotlin.math.roundToInt
  * (rosso -> verde) con fulmine in ricarica, richiami azzurri luminosi con le pressioni accanto alle ruote.
  */
 object WidgetRenderer {
-    private val BG1 = Color.rgb(13, 20, 34)
-    private val BG2 = Color.rgb(5, 8, 14)
-    private val TEXT = Color.rgb(238, 243, 248)
-    private val DIM = Color.rgb(143, 161, 179)
-    private val ICE = Color.rgb(201, 232, 249)
-    private val RING = Color.rgb(223, 241, 255)
-    private val GLOW = Color.rgb(120, 200, 255)
-    private val DANGER = Color.rgb(255, 131, 142)
-    private val TEAL = Color.rgb(92, 196, 181)
-    private val ACCENT = Color.rgb(231, 167, 101)
+    internal val BG1 = Color.rgb(13, 20, 34)
+    internal val BG2 = Color.rgb(5, 8, 14)
+    internal val TEXT = Color.rgb(238, 243, 248)
+    internal val DIM = Color.rgb(143, 161, 179)
+    internal val ICE = Color.rgb(201, 232, 249)
+    internal val RING = Color.rgb(223, 241, 255)
+    internal val GLOW = Color.rgb(120, 200, 255)
+    internal val DANGER = Color.rgb(255, 131, 142)
+    internal val TEAL = Color.rgb(92, 196, 181)
+    internal val ACCENT = Color.rgb(231, 167, 101)
 
     private var car: Bitmap? = null
     private fun carBitmap(ctx: Context): Bitmap? {
@@ -42,7 +42,7 @@ object WidgetRenderer {
         return car
     }
     private fun tesla(ctx: Context): Typeface = runCatching { ctx.resources.getFont(R.font.tesla_title) }.getOrNull() ?: font(ctx, true)
-    private fun font(ctx: Context, bold: Boolean): Typeface =
+    internal fun font(ctx: Context, bold: Boolean): Typeface =
         runCatching { ctx.resources.getFont(if (bold) R.font.rajdhani_bold else R.font.rajdhani_semibold) }.getOrNull()
             ?: Typeface.create("sans-serif-condensed", if (bold) Typeface.BOLD else Typeface.NORMAL)
 
@@ -60,7 +60,7 @@ object WidgetRenderer {
     }
     fun socColor(soc: Int?): Int = hsl((soc ?: 0).coerceIn(0, 100) * 1.2f, .85f, .56f)
 
-    private fun fondo(c: Canvas, w: Float, h: Float, r: Float) {
+    internal fun fondo(c: Canvas, w: Float, h: Float, r: Float) {
         val p = Paint(Paint.ANTI_ALIAS_FLAG)
         p.shader = LinearGradient(0f, 0f, w * .4f, h, Color.rgb(8, 10, 14), Color.BLACK, Shader.TileMode.CLAMP)
         c.drawRoundRect(RectF(0f, 0f, w, h), r, r, p)
@@ -120,13 +120,13 @@ object WidgetRenderer {
         c.drawPath(bolt, bp)
     }
 
-    private fun testo(c: Canvas, t: String, x: Float, y: Float, size: Float, color: Int, tf: Typeface, align: Paint.Align = Paint.Align.LEFT, glow: Int? = null, spacing: Float = 0f) {
+    internal fun testo(c: Canvas, t: String, x: Float, y: Float, size: Float, color: Int, tf: Typeface, align: Paint.Align = Paint.Align.LEFT, glow: Int? = null, spacing: Float = 0f) {
         val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = size; this.color = color; typeface = tf; textAlign = align; letterSpacing = spacing }
         if (glow != null) p.setShadowLayer(size * .35f, 0f, 0f, glow)
         c.drawText(t, x, y, p)
     }
 
-    private fun f1(v: Double?) = if (v == null) "—" else String.format(Locale.ITALIAN, "%.1f", v)
+    internal fun f1(v: Double?) = if (v == null) "—" else String.format(Locale.ITALIAN, "%.1f", v)
     private fun stato(s: TeslaStato): String = when {
         s.inCarica -> "In carica" + (s.potenzaKw?.let { " · " + f1(it) + " kW" } ?: "")
         s.carica == "Complete" -> "Carica completata"
@@ -134,13 +134,13 @@ object WidgetRenderer {
         s.carica == "Disconnected" || s.carica.isEmpty() -> if (s.casa) "A casa · scollegata" else "Scollegata"
         else -> s.carica
     }
-    private fun ora(ts: Long?): String {
+    internal fun ora(ts: Long?): String {
         if (ts == null) return ""
         val oggi = SimpleDateFormat("yyyyMMdd", Locale.ITALIAN)
         val stesso = oggi.format(Date(ts)) == oggi.format(Date())
         return "Aggiornato " + SimpleDateFormat(if (stesso) "'alle' HH:mm" else "dd/MM 'alle' HH:mm", Locale.ITALIAN).format(Date(ts))
     }
-    private val ORA = Color.argb(225, 214, 226, 238)
+    internal val ORA = Color.argb(225, 214, 226, 238)
 
     /** Cornice ambra sottile con angoli più spessi e luminosi (come le staffe agli angoli) */
     fun cornice(c: Canvas, w: Float, h: Float, rad: Float) {
