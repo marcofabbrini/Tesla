@@ -214,70 +214,71 @@ object WidgetRenderer {
         return bmp
     }
 
-    /** Widget grande: foto dell'auto su fondo nero esteso a tutto il widget, batteria, lucchetto, pressioni accanto alle ruote */
-    fun grande(ctx: Context, s: TeslaStato?, esito: String, wPx: Int, hPx: Int, sfondo: Boolean = true): Bitmap {
-        val w = wPx.coerceIn(300, 1000); val h = (hPx * w / wPx.toFloat()).roundToInt().coerceIn(150, 1000)
+    /** Widget grande (4 x 4): batteria a sinistra, Tesla, chiusura e temperature a destra, auto al centro, pressioni in fondo */
+    fun grande(ctx: Context, s: TeslaStato?, esito: String, wPx: Int, hPx: Int): Bitmap {
+        val w = wPx.coerceIn(300, 1000); val h = (hPx * w / wPx.toFloat()).roundToInt().coerceIn(200, 1200)
         if (s == null) return messaggio(ctx, w, h, if (esito.isBlank()) "Apri l'app Tesla Charge Cost > Impostazioni e collega il widget." else esito)
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888); val c = Canvas(bmp)
-        val wf = w.toFloat(); val hf = h.toFloat()
-        val rad = min(w, h) * .09f
-        // fondo nero come quello della foto, esteso a tutto il widget
+        val wf = w.toFloat(); val hf = h.toFloat(); val mn = min(wf, hf)
+        val rad = mn * .09f
         c.drawRoundRect(RectF(0f, 0f, wf, hf), rad, rad, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK })
         val bold = font(ctx, true); val reg = font(ctx, false)
         val col = socColor(s.soc)
-        val pad = min(w, h) * .065f
-        val sz = min(h * .068f, w * .036f)
+        val pad = mn * .07f
+        val sz = mn * .05f
 
-        // foto (1672 x 941, fondo nero con riflesso a terra già presente), bordi sfumati nel nero
+        // auto (foto 1672 x 941 su fondo nero) tra le scritte in alto e le pressioni in fondo, bordi sfumati nel nero
         val img = carBitmap(ctx)
-        var ix = 0f; var iy = 0f; var iw = 0f; var ih = 0f
         if (img != null) {
-            ih = h * .80f; iw = ih * img.width / img.height
-            if (iw > w * 1.0f) { iw = wf; ih = iw * img.height / img.width }
-            ix = (w - iw) / 2f; iy = h - ih * .93f
+            var iw = wf * 1.04f; var ih = iw * img.height / img.width
+            if (ih > hf * .54f) { ih = hf * .54f; iw = ih * img.width / img.height }
+            val ix = (wf - iw) / 2f; val iy = hf * .80f - ih * .81f
             c.save(); c.clipRect(RectF(1f, 1f, wf - 1f, hf - 1f))
             c.drawBitmap(img, null, RectF(ix, iy, ix + iw, iy + ih), Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
             val f = Paint()
-            f.shader = LinearGradient(0f, iy, 0f, iy + ih * .25f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix, iy - 1f, ix + iw, iy + ih * .25f, f)
-            f.shader = LinearGradient(ix, 0f, ix + iw * .10f, 0f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix - 1f, iy, ix + iw * .10f, hf, f)
-            f.shader = LinearGradient(ix + iw, 0f, ix + iw * .90f, 0f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix + iw * .90f, iy, ix + iw + 1f, hf, f)
+            f.shader = LinearGradient(0f, iy, 0f, iy + ih * .25f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix - 1f, iy - 1f, ix + iw + 1f, iy + ih * .25f, f)
+            f.shader = LinearGradient(0f, iy + ih, 0f, iy + ih * .82f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix - 1f, iy + ih * .82f, ix + iw + 1f, iy + ih + 1f, f)
+            f.shader = LinearGradient(ix, 0f, ix + iw * .08f, 0f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix - 1f, iy, ix + iw * .08f, iy + ih, f)
+            f.shader = LinearGradient(ix + iw, 0f, ix + iw * .92f, 0f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix + iw * .92f, iy, ix + iw + 1f, iy + ih, f)
             c.restore()
         }
 
-        // in alto a sinistra: batteria, percentuale, autonomia e stato
-        val bw = min(w * .25f, h * .44f)
-        val top = pad * .55f
-        val bx = pad * .8f
-        batteria(c, bx, top, bw, s.soc, s.limite, s.inCarica)
-        val tx = bx + bw + pad * .35f
-        val big = min(h * .20f, w * .10f)
-        val by = top + bw * .25f + big * .36f
-        testo(c, (s.soc?.toString() ?: "—") + "%", tx, by, big, col, bold, glow = col)
-        testo(c, s.autonomiaKm?.let { "$it km" } ?: "", tx, by + sz * 1.55f, sz * 1.3f, TEXT, bold)
-        testo(c, stato(s).uppercase(), tx, by + sz * 2.75f, sz * .85f, if (s.inCarica) TEAL else DIM, reg, spacing = .06f)
+        val top = pad * .8f
+        // a sinistra, allineate al bordo: batteria, percentuale, autonomia, stato
+        val bw = mn * .30f
+        batteria(c, pad - bw * .04f, top, bw, s.soc, s.limite, s.inCarica)
+        val big = mn * .13f
+        val yp = top + bw * .42f + big * .95f
+        testo(c, (s.soc?.toString() ?: "—") + "%", pad, yp, big, col, bold, glow = col)
+        testo(c, s.autonomiaKm?.let { "$it km" } ?: "", pad, yp + sz * 1.45f, sz * 1.3f, TEXT, bold)
+        testo(c, stato(s).uppercase(), pad, yp + sz * 2.55f, sz * .85f, if (s.inCarica) TEAL else DIM, reg, spacing = .06f)
 
-        // in alto a destra: lucchetto, scritta, temperature e ora a sinistra del lucchetto
-        val lk = min(h * .19f, w * .09f)
-        val lx = w - pad - lk * .5f
-        testo(c, "TESLA", w - pad, top + sz * .85f, sz * .8f, Color.argb(235, 233, 238, 243), tesla(ctx), Paint.Align.RIGHT, spacing = .35f)
-        val ly = top + sz * 1.5f + lk * .55f
-        lucchetto(c, lx, ly, lk, s.bloccata)
-        val rx = lx - lk * .8f
-        testo(c, when (s.bloccata) { true -> "CHIUSA"; false -> "APERTA"; else -> "" }, rx, ly + sz * .42f, sz * 1.15f,
+        // a destra, allineate al bordo: Tesla, lucchetto, chiusura, temperature, ora
+        val rx = wf - pad
+        testo(c, "TESLA", rx, top + sz * .8f, sz * .8f, Color.argb(235, 233, 238, 243), tesla(ctx), Paint.Align.RIGHT, spacing = .35f)
+        val lk = mn * .11f
+        val ly = top + sz * 1.3f + lk * .5f
+        lucchetto(c, rx - lk * .45f, ly, lk, s.bloccata)
+        val yy = ly + lk * .5f + sz * 1.2f
+        testo(c, when (s.bloccata) { true -> "CHIUSA"; false -> "APERTA"; else -> "" }, rx, yy, sz * 1.15f,
             when (s.bloccata) { false -> DANGER; else -> ICE }, bold, Paint.Align.RIGHT, spacing = .12f)
-        testo(c, listOfNotNull(s.tempInt?.let { f1(it) + "°" }, s.tempEst?.let { "fuori " + f1(it) + "°" }).joinToString(" · "), rx, ly + sz * 1.87f, sz, TEXT, reg, Paint.Align.RIGHT)
-        testo(c, ora(s.ts), rx, ly + sz * 3.2f, sz * .95f, ORA, reg, Paint.Align.RIGHT)
+        testo(c, listOfNotNull(s.tempInt?.let { f1(it) + "°" }, s.tempEst?.let { "fuori " + f1(it) + "°" }).joinToString(" · "), rx, yy + sz * 1.25f, sz, TEXT, reg, Paint.Align.RIGHT)
+        testo(c, ora(s.ts), rx, yy + sz * 2.4f, sz * .9f, ORA, reg, Paint.Align.RIGHT)
 
-        // collegamenti dalla foto (punti nella foto 1672 x 941): ruote -> pressioni, pacco batteria -> batteria, portiera -> lucchetto
-        if (img != null) {
-            fun pt(px: Float, py: Float) = Pair(ix + px * iw / 1672f, iy + py * ih / 941f)
-            val g = s.gomme
-            fun warn(a: Double?, b: Double?) = (a != null && a < 2.6) || (b != null && b < 2.6)
-            fun valTxt(a: Double?, b: Double?) = if (a == null && b == null) "—" else f1(a) + " · " + f1(b) + " bar"
-            richiamo(c, pt(710f, 605f), Pair(w * .05f + pad * .3f, h - pad * .75f), "ANTERIORI", valTxt(g.getOrNull(0), g.getOrNull(1)), warn(g.getOrNull(0), g.getOrNull(1)), sz, reg, bold, Paint.Align.LEFT)
-            richiamo(c, pt(1475f, 542f), Pair(w * .95f - pad * .3f, h - pad * .75f), "POSTERIORI", valTxt(g.getOrNull(2), g.getOrNull(3)), warn(g.getOrNull(2), g.getOrNull(3)), sz, reg, bold, Paint.Align.RIGHT)
-            stanghetta(c, percorso(pt(1120f, 365f), Pair(lx, ly + lk * .6f), h * .42f), sz)
+        // in fondo, staccate dall'immagine: pressioni delle gomme
+        val by = hf - pad * .9f
+        c.drawLine(pad, by - sz * 2.6f, wf - pad, by - sz * 2.6f, Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeWidth = max(1.5f, mn * .002f); color = Color.argb(70, 201, 232, 249) })
+        val g = s.gomme
+        fun warn(a: Double?, b: Double?) = (a != null && a < 2.6) || (b != null && b < 2.6)
+        fun valTxt(a: Double?, b: Double?) = if (a == null && b == null) "non disponibili" else f1(a) + " · " + f1(b) + " bar"
+        fun gomme(x: Float, al: Paint.Align, titolo: String, a: Double?, b: Double?) {
+            testo(c, titolo, x, by - sz * 1.45f, sz * .75f, Color.argb(200, 201, 232, 249), reg, al, spacing = .12f)
+            val nd = a == null && b == null
+            testo(c, valTxt(a, b), x, by, if (nd) sz * .9f else sz * 1.2f, if (nd) DIM else if (warn(a, b)) Color.rgb(255, 154, 163) else Color.WHITE, if (nd) reg else bold, al)
         }
+        gomme(pad, Paint.Align.LEFT, "GOMME ANTERIORI", g.getOrNull(0), g.getOrNull(1))
+        gomme(rx, Paint.Align.RIGHT, "GOMME POSTERIORI", g.getOrNull(2), g.getOrNull(3))
+
         cornice(c, wf, hf, rad)
         return bmp
     }

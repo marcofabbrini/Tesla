@@ -157,7 +157,7 @@ class TeslaBatteryWidget : TeslaWidgetBase() {
 }
 
 class TeslaStatusWidget : TeslaWidgetBase() {
-    override val dimDefault = 360 to 220
+    override val dimDefault = 360 to 400
     override fun viste(ctx: Context, s: TeslaStato?, esito: String, wDp: Int, hDp: Int): RemoteViews {
         val (w, h) = scala(px(ctx, wDp), px(ctx, hDp))
         return RemoteViews(ctx.packageName, R.layout.widget_image).apply {
