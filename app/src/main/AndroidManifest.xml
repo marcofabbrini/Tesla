@@ -48,6 +48,34 @@
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_fv_grande_info" />
         </receiver>
 
+        <receiver android:name=".widget.FvMgRigaWidget" android:exported="false" android:label="@string/widget_fv_mg_riga">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_fv_mg_riga_info" />
+        </receiver>
+
+        <receiver android:name=".widget.FvMgCompattoWidget" android:exported="false" android:label="@string/widget_fv_mg_compatto">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_fv_mg_compatto_info" />
+        </receiver>
+
+        <receiver android:name=".widget.Fv22RigaWidget" android:exported="false" android:label="@string/widget_fv_22_riga">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_fv_22_riga_info" />
+        </receiver>
+
+        <receiver android:name=".widget.Fv22CompattoWidget" android:exported="false" android:label="@string/widget_fv_22_compatto">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_fv_22_compatto_info" />
+        </receiver>
+
         <receiver android:name=".widget.TeslaWidgetTimer" android:exported="false" />
     </application>
 

@@ -10,5 +10,5 @@
     android:widgetCategory="home_screen|keyguard"
     android:updatePeriodMillis="1800000"
     android:initialLayout="@layout/widget_image"
-    android:previewImage="@drawable/widget_car"
+    android:previewImage="@drawable/widget_fv_prev_piccolo"
     android:description="@string/widget_fv_piccolo_desc" />

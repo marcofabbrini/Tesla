@@ -8,5 +8,13 @@
     <string name="widget_fv_grande">Fotovoltaico · Dettaglio impianti</string>
     <string name="widget_fv_piccolo_desc">Carica della batteria e produzione attuale di CASA 22 e CASA M&amp;G</string>
     <string name="widget_fv_grande_desc">Batteria, flussi di potenza, curva di oggi, ieri e mese dei due impianti</string>
+    <string name="widget_fv_mg_riga">CASA M&amp;G · Riga</string>
+    <string name="widget_fv_mg_compatto">CASA M&amp;G · Compatto</string>
+    <string name="widget_fv_22_riga">CASA 22 · Riga</string>
+    <string name="widget_fv_22_compatto">CASA 22 · Compatto</string>
+    <string name="widget_fv_mg_riga_desc">CASA M&amp;G in una riga: batteria, solare, casa e rete</string>
+    <string name="widget_fv_mg_compatto_desc">CASA M&amp;G compatto (2 x 1): batteria e produzione attuale</string>
+    <string name="widget_fv_22_riga_desc">CASA 22 in una riga: batteria, solare, casa e rete</string>
+    <string name="widget_fv_22_compatto_desc">CASA 22 compatto (2 x 1): batteria e produzione attuale</string>
     <string name="widget_stato_desc">Auto, batteria, pressione delle gomme, chiusura e temperature</string>
 </resources>
