@@ -285,11 +285,15 @@ object WidgetRenderer {
             val hub = if (al == Paint.Align.LEFT) hubA else hubP
             if (hub != null) {
                 val tw = Paint().apply { textSize = sz * .75f; typeface = reg; letterSpacing = .12f }.measureText(titolo)
-                // arriva sopra l'etichetta, nel tratto occupato dal titolo
-                val x0 = if (al == Paint.Align.LEFT) x else x - tw
-                val kx = hub.first.coerceIn(x0 + sz * .6f, x0 + tw - sz * .6f)
-                val ky = by - sz * 2.35f
-                stanghetta(c, percorso(hub, Pair(kx, ky), ky), sz, warn(a, b))
+                // dalla ruota in diagonale fino alla riga sopra l'etichetta, poi in orizzontale lungo tutto il titolo
+                val ky = by - sz * 2.3f
+                val pts = if (al == Paint.Align.LEFT) {
+                    val dx = (ky - hub.second) * .45f
+                    listOf(hub, Pair(max(x + tw * .6f, hub.first - dx), ky), Pair(x, ky))
+                } else {
+                    listOf(hub, Pair(x, ky), Pair(x - tw, ky))
+                }
+                stanghetta(c, pts, sz, warn(a, b))
             }
             val nd = a == null && b == null
             testo(c, valTxt(a, b), x, by, if (nd) sz * .9f else sz * 1.2f, if (nd) DIM else if (warn(a, b)) Color.rgb(255, 154, 163) else Color.WHITE, if (nd) reg else bold, al)
@@ -323,13 +327,13 @@ object WidgetRenderer {
     /** Linea sottile luminosa con un pallino piccolo a ciascuna estremità */
     private fun stanghetta(c: Canvas, pts: List<Pair<Float, Float>>, sz: Float, warn: Boolean = false) {
         val ln = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE; strokeWidth = max(1.5f, sz * .09f); strokeJoin = Paint.Join.ROUND
-            color = Color.argb(215, 238, 243, 248); setShadowLayer(sz * .25f, 0f, 0f, if (warn) DANGER else GLOW)
+            style = Paint.Style.STROKE; strokeWidth = max(1f, sz * .045f); strokeJoin = Paint.Join.ROUND
+            color = Color.argb(225, 238, 243, 248); setShadowLayer(sz * .18f, 0f, 0f, if (warn) DANGER else GLOW)
         }
         val path = Path().apply { moveTo(pts[0].first, pts[0].second); for (p in pts.drop(1)) lineTo(p.first, p.second) }
         c.drawPath(path, ln)
         val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = if (warn) Color.rgb(255, 179, 186) else Color.WHITE; setShadowLayer(sz * .3f, 0f, 0f, if (warn) DANGER else GLOW) }
-        for (p in listOf(pts.first(), pts.last())) c.drawCircle(p.first, p.second, max(2.5f, sz * .16f), dot)
+        for (p in listOf(pts.first(), pts.last())) c.drawCircle(p.first, p.second, max(2f, sz * .11f), dot)
     }
 
     /** Ruota -> etichetta in basso: stanghetta verticale e poi orizzontale, titolo piccolo e valore */
