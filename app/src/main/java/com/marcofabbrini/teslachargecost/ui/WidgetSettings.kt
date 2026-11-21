@@ -20,6 +20,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
+import com.marcofabbrini.teslachargecost.widget.FvApi
 import com.marcofabbrini.teslachargecost.widget.TeslaApi
 import com.marcofabbrini.teslachargecost.widget.TeslaWidgetsAll
 import com.marcofabbrini.teslachargecost.widget.WidgetPrefs
@@ -62,6 +63,7 @@ fun WidgetSettingsCard() {
                 val app = ctx.applicationContext
                 Thread {
                     TeslaApi.aggiorna(app)
+                    FvApi.aggiorna(app)
                     TeslaWidgetsAll.aggiornaTutti(app)
                     esito = WidgetPrefs.ultimoEsito(app)
                     prova = false
@@ -94,7 +96,7 @@ fun WidgetSettingsCard() {
             )
         }
         Text(
-            "Poi tieni premuto sulla schermata Home › Widget › Tesla Charge Cost. Si aggiornano da soli ogni 5 minuti a schermo acceso; toccali per aggiornarli subito.",
+            "Poi tieni premuto sulla schermata Home › Widget › Tesla Charge Cost: ci sono i widget della Tesla e quelli del Fotovoltaico (CASA 22 e CASA M&G), con la stessa chiave. Si aggiornano da soli ogni 5 minuti a schermo acceso; toccali per aggiornarli subito.",
             modifier = Modifier.padding(top = 10.dp), color = Neon.TextDim, fontSize = 12.sp,
         )
     }

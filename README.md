@@ -64,6 +64,18 @@ Aprendo la cartella con Android Studio, il wrapper Gradle viene generato automat
 Il workflow `.github/workflows/android.yml` compila e testa a ogni push, pubblica l'APK nella Release `latest`
 e lo carica come artefatto.
 
+## Widget del fotovoltaico
+
+Oltre ai widget della Tesla, in Home › Widget › Tesla Charge Cost ci sono due widget per gli impianti **CASA 22** e **CASA M&G**
+(stessa chiave e stesso indirizzo del sito, nessuna impostazione in più):
+
+- **Fotovoltaico · Batteria e produzione** (4 x 2): carica della batteria e produzione attuale dei due impianti.
+- **Fotovoltaico · Dettaglio impianti** (4 x 4): per impianto batteria, solare, casa, rete (prelievo o immissione), batteria in carica o scarica,
+  produzione di oggi, curva della giornata, produzione di ieri e del mese.
+
+I dati arrivano da `api/fv-widget.php` del sito (lettura ZCS al massimo una volta al minuto) e si aggiornano ogni 5 minuti insieme a quelli della Tesla.
+Se i dati ZCS sul sito sono fermi da più di 15 minuti, il widget lo segnala in rosso.
+
 ## Aggiornare l'app sovrapponendo l'APK
 
 Android accetta un aggiornamento solo se l'APK nuovo ha lo stesso nome pacchetto, la **stessa chiave di firma**

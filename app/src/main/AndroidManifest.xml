@@ -34,6 +34,20 @@
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_stato_info" />
         </receiver>
 
+        <receiver android:name=".widget.FvSmallWidget" android:exported="false" android:label="@string/widget_fv_piccolo">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_fv_piccolo_info" />
+        </receiver>
+
+        <receiver android:name=".widget.FvLargeWidget" android:exported="false" android:label="@string/widget_fv_grande">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_fv_grande_info" />
+        </receiver>
+
         <receiver android:name=".widget.TeslaWidgetTimer" android:exported="false" />
     </application>
 
