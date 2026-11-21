@@ -61,9 +61,9 @@ object WidgetRenderer {
 
     private fun fondo(c: Canvas, w: Float, h: Float, r: Float) {
         val p = Paint(Paint.ANTI_ALIAS_FLAG)
-        p.shader = LinearGradient(0f, 0f, w * .4f, h, BG1, BG2, Shader.TileMode.CLAMP)
+        p.shader = LinearGradient(0f, 0f, w * .4f, h, Color.rgb(8, 10, 14), Color.BLACK, Shader.TileMode.CLAMP)
         c.drawRoundRect(RectF(0f, 0f, w, h), r, r, p)
-        p.shader = RadialGradient(w * .85f, h * 1.1f, w * .7f, Color.argb(46, 231, 167, 101), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        p.shader = RadialGradient(w * .85f, h * 1.1f, w * .7f, Color.argb(26, 140, 190, 230), Color.TRANSPARENT, Shader.TileMode.CLAMP)
         c.drawRoundRect(RectF(0f, 0f, w, h), r, r, p)
         val b = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = max(1.5f, w / 400f); color = Color.argb(40, 201, 232, 249) }
         c.drawRoundRect(RectF(1f, 1f, w - 1f, h - 1f), r, r, b)
@@ -182,48 +182,37 @@ object WidgetRenderer {
         return bmp
     }
 
-    /** Widget grande: auto su fondo scuro con riflesso a terra, batteria, lucchetto, pressioni accanto alle ruote */
+    /** Widget grande: foto dell'auto su fondo nero esteso a tutto il widget, batteria, lucchetto, pressioni accanto alle ruote */
     fun grande(ctx: Context, s: TeslaStato?, esito: String, wPx: Int, hPx: Int, sfondo: Boolean = true): Bitmap {
         val w = wPx.coerceIn(300, 1000); val h = (hPx * w / wPx.toFloat()).roundToInt().coerceIn(150, 1000)
         if (s == null) return messaggio(ctx, w, h, if (esito.isBlank()) "Apri l'app Tesla Charge Cost > Impostazioni e collega il widget." else esito)
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888); val c = Canvas(bmp)
         val wf = w.toFloat(); val hf = h.toFloat()
-        if (sfondo) fondo(c, wf, hf, min(w, h) * .09f)
+        val rad = min(w, h) * .09f
+        // fondo nero come quello della foto, esteso a tutto il widget
+        c.drawRoundRect(RectF(0f, 0f, wf, hf), rad, rad, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK })
         val bold = font(ctx, true); val reg = font(ctx, false)
         val col = socColor(s.soc)
         val pad = min(w, h) * .065f
         val sz = min(h * .068f, w * .036f)
 
-        // auto con riflesso: la foto (1640 x 901) ha lo sfondo trasparente; la ruota anteriore tocca terra all'85% dell'altezza
+        // foto (1672 x 941, fondo nero con riflesso a terra già presente), bordi sfumati nel nero
         val img = carBitmap(ctx)
         var ix = 0f; var iy = 0f; var iw = 0f; var ih = 0f
         if (img != null) {
-            ih = h * .68f; iw = ih * img.width / img.height
-            if (iw > w * .95f) { iw = w * .95f; ih = iw * img.height / img.width }
-            ix = (w - iw) / 2f
-            val terra = h * .87f
-            iy = terra - ih * .85f
-            val dst = RectF(ix, iy, ix + iw, iy + ih)
-            c.save(); c.clipRect(RectF(2f, 2f, wf - 2f, hf - 2f))
-            // alone sul pavimento
-            c.save(); c.scale(1f, .16f, wf / 2f, terra)
-            c.drawCircle(wf / 2f, terra, iw * .55f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                shader = RadialGradient(wf / 2f, terra, iw * .55f, Color.argb(70, 150, 205, 255), Color.TRANSPARENT, Shader.TileMode.CLAMP)
-            })
-            c.restore()
-            // riflesso: foto capovolta sulla linea di terra, che sfuma verso il basso
-            val layer = c.saveLayer(0f, terra, wf, hf, null)
-            c.save(); c.scale(1f, -1f, 0f, terra)
-            c.drawBitmap(img, null, dst, Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG).apply { alpha = 80 })
-            c.restore()
-            c.drawRect(0f, terra, wf, hf, Paint().apply {
-                shader = LinearGradient(0f, terra, 0f, terra + ih * .30f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP)
-                xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN)
-            })
-            c.restoreToCount(layer)
-            c.drawBitmap(img, null, dst, Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
+            ih = h * .80f; iw = ih * img.width / img.height
+            if (iw > w * 1.0f) { iw = wf; ih = iw * img.height / img.width }
+            ix = (w - iw) / 2f; iy = h - ih * .93f
+            c.save(); c.clipRect(RectF(1f, 1f, wf - 1f, hf - 1f))
+            c.drawBitmap(img, null, RectF(ix, iy, ix + iw, iy + ih), Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
+            val f = Paint()
+            f.shader = LinearGradient(0f, iy, 0f, iy + ih * .25f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix, iy - 1f, ix + iw, iy + ih * .25f, f)
+            f.shader = LinearGradient(ix, 0f, ix + iw * .10f, 0f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix - 1f, iy, ix + iw * .10f, hf, f)
+            f.shader = LinearGradient(ix + iw, 0f, ix + iw * .90f, 0f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP); c.drawRect(ix + iw * .90f, iy, ix + iw + 1f, hf, f)
             c.restore()
         }
+        val b = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = max(1.5f, w / 400f); color = Color.argb(34, 201, 232, 249) }
+        c.drawRoundRect(RectF(1f, 1f, wf - 1f, hf - 1f), rad, rad, b)
 
         // in alto a sinistra: batteria, percentuale, autonomia e stato
         val bw = min(w * .25f, h * .44f)
@@ -247,20 +236,26 @@ object WidgetRenderer {
         testo(c, listOfNotNull(s.tempInt?.let { f1(it) + "°" }, s.tempEst?.let { "fuori " + f1(it) + "°" }).joinToString(" · "), rx, ly + sz * 1.87f, sz, TEXT, reg, Paint.Align.RIGHT)
         testo(c, ora(s.ts), rx, ly + sz * 3.07f, sz * .85f, Color.argb(150, 143, 161, 179), reg, Paint.Align.RIGHT)
 
-        // collegamenti dalla foto (punti nella foto 1640 x 901): ruote -> pressioni, pacco batteria -> batteria, portiera -> lucchetto
+        // collegamenti dalla foto (punti nella foto 1672 x 941): ruote -> pressioni, pacco batteria -> batteria, portiera -> lucchetto
         if (img != null) {
-            fun pt(px: Float, py: Float) = Pair(ix + px * iw / 1640f, iy + py * ih / 901f)
+            fun pt(px: Float, py: Float) = Pair(ix + px * iw / 1672f, iy + py * ih / 941f)
             val g = s.gomme
             fun warn(a: Double?, b: Double?) = (a != null && a < 2.6) || (b != null && b < 2.6)
             fun valTxt(a: Double?, b: Double?) = if (a == null && b == null) "—" else f1(a) + " · " + f1(b) + " bar"
-            richiamo(c, pt(712f, 610f), Pair(w * .05f + pad * .3f, h - pad * .35f), "ANTERIORI", valTxt(g.getOrNull(0), g.getOrNull(1)), warn(g.getOrNull(0), g.getOrNull(1)), sz, reg, bold, Paint.Align.LEFT)
-            richiamo(c, pt(1500f, 542f), Pair(w * .95f - pad * .3f, h - pad * .35f), "POSTERIORI", valTxt(g.getOrNull(2), g.getOrNull(3)), warn(g.getOrNull(2), g.getOrNull(3)), sz, reg, bold, Paint.Align.RIGHT)
-            val pk = pt(1050f, 560f); val bxc = bx + bw * .43f; val yb = h * .385f
-            stanghetta(c, listOf(pk, Pair(pk.first, yb), Pair(bxc, yb), Pair(bxc, top + bw * .42f + sz * .3f)), sz)
-            val dr = pt(1105f, 352f); val yd = h * .405f
-            stanghetta(c, listOf(dr, Pair(dr.first, yd), Pair(lx, yd), Pair(lx, ly + lk * .6f)), sz)
+            richiamo(c, pt(710f, 605f), Pair(w * .05f + pad * .3f, h - pad * .35f), "ANTERIORI", valTxt(g.getOrNull(0), g.getOrNull(1)), warn(g.getOrNull(0), g.getOrNull(1)), sz, reg, bold, Paint.Align.LEFT)
+            richiamo(c, pt(1475f, 542f), Pair(w * .95f - pad * .3f, h - pad * .35f), "POSTERIORI", valTxt(g.getOrNull(2), g.getOrNull(3)), warn(g.getOrNull(2), g.getOrNull(3)), sz, reg, bold, Paint.Align.RIGHT)
+            stanghetta(c, percorso(pt(1040f, 560f), Pair(bx + bw * .43f, top + bw * .42f + sz * .3f), h * .40f), sz)
+            stanghetta(c, percorso(pt(1120f, 365f), Pair(lx, ly + lk * .6f), h * .40f), sz)
         }
         return bmp
+    }
+
+    /** Percorso a angoli aperti: diagonale a 45° fino alla quota ym, tratto orizzontale, diagonale fino all'arrivo */
+    private fun percorso(p0: Pair<Float, Float>, p3: Pair<Float, Float>, ym: Float): List<Pair<Float, Float>> {
+        val sg = if (p3.first >= p0.first) 1f else -1f
+        val p1 = Pair(p0.first + sg * kotlin.math.abs(p0.second - ym), ym)
+        val p2 = Pair(p3.first - sg * kotlin.math.abs(p3.second - ym), ym)
+        return if ((p2.first - p1.first) * sg < 0) listOf(p0, p3) else listOf(p0, p1, p2, p3)
     }
 
     /** Linea sottile luminosa con un pallino piccolo a ciascuna estremità */
@@ -278,7 +273,7 @@ object WidgetRenderer {
     /** Ruota -> etichetta in basso: stanghetta verticale e poi orizzontale, titolo piccolo e valore */
     private fun richiamo(c: Canvas, dot: Pair<Float, Float>, end: Pair<Float, Float>, titolo: String, valore: String, warn: Boolean, sz: Float, reg: Typeface, bold: Typeface, align: Paint.Align) {
         val kx = end.first; val ky = end.second - sz * 2.6f
-        stanghetta(c, listOf(dot, Pair(dot.first, ky), Pair(kx, ky)), sz, warn)
+        stanghetta(c, percorso(dot, Pair(kx, ky), ky), sz, warn)
         testo(c, titolo, kx, ky + sz * 1.25f, sz * .82f, Color.argb(200, 201, 232, 249), reg, align, spacing = .14f)
         testo(c, valore, kx, ky + sz * 2.55f, sz * 1.25f, if (warn) Color.rgb(255, 154, 163) else Color.WHITE, bold, align)
     }
