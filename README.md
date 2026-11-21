@@ -73,6 +73,12 @@ Oltre ai widget della Tesla, in Home › Widget › Tesla Charge Cost ci sono du
 - **Fotovoltaico · Dettaglio impianti** (4 x 4): per impianto batteria, solare, casa, rete (prelievo o immissione), batteria in carica o scarica,
   produzione di oggi, curva della giornata, produzione di ieri e del mese.
 
+Per ciascun impianto ci sono anche due widget singoli, con una palazzina a tre piani che li rende riconoscibili anche nell'anteprima
+(CASA M&G = secondo e terzo piano accesi, CASA 22 = primo piano acceso):
+
+- **CASA M&G · Riga** e **CASA 22 · Riga** (4 x 1): nome e produzione di oggi, carica, solare, casa e rete.
+- **CASA M&G · Compatto** e **CASA 22 · Compatto** (2 x 1): carica della batteria con freccia in carica/in scarica e produzione attuale.
+
 I dati arrivano da `api/fv-widget.php` del sito (lettura ZCS al massimo una volta al minuto) e si aggiornano ogni 5 minuti insieme a quelli della Tesla.
 Se i dati ZCS sul sito sono fermi da più di 15 minuti, il widget lo segnala in rosso.
 

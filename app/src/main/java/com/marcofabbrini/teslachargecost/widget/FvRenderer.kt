@@ -183,4 +183,116 @@ object FvRenderer {
         WidgetRenderer.cornice(c, wf, hf, mn * .09f)
         return bmp
     }
+
+    private fun segno(v: Double?, dec: Int = 1): String {
+        if (v == null) return "—"
+        val t = String.format(Locale.ITALIAN, "%.${dec}f", abs(v))
+        return when { v > 0.02 -> "+$t"; v < -0.02 -> "−$t"; else -> t }
+    }
+
+    /**
+     * Palazzina a tre piani che identifica l'impianto: CASA M&G è il secondo e terzo piano (i due in alto accesi),
+     * CASA 22 il primo piano (quello in basso acceso). Centrata in (cx, cy), lato s.
+     */
+    fun edificio(c: Canvas, cx: Float, cy: Float, s: Float, impId: String) {
+        val accesi = if (impId == "casa_22") setOf(2) else setOf(0, 1)
+        val bw = s * .64f; val bh = s * .27f; val g = s * .045f
+        val top = cy - (bh * 3 + g * 2) / 2f
+        val x0 = cx - bw / 2f
+        for (i in 0 until 3) {
+            val y0 = top + i * (bh + g)
+            val r = RectF(x0, y0, x0 + bw, y0 + bh)
+            val on = i in accesi
+            val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = if (on) Color.argb(70, 231, 167, 101) else Color.argb(14, 255, 255, 255)
+            }
+            val line = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE; strokeWidth = max(1.2f, s * .035f)
+                color = if (on) SOLE else Color.argb(90, 201, 232, 249)
+                if (on) setShadowLayer(s * .12f, 0f, 0f, SOLE)
+            }
+            c.drawRoundRect(r, s * .05f, s * .05f, fill)
+            c.drawRoundRect(r, s * .05f, s * .05f, line)
+            val fin = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = if (on) Color.rgb(255, 214, 160) else Color.argb(60, 201, 232, 249) }
+            for (k in 0 until 3) {
+                val wx = x0 + bw * (.2f + k * .3f)
+                c.drawRect(wx - s * .04f, y0 + bh * .33f, wx + s * .04f, y0 + bh * .67f, fin)
+            }
+        }
+        // tetto
+        val tetto = Path().apply { moveTo(x0 - bw * .06f, top - g * .6f); lineTo(cx, top - bh * .55f); lineTo(x0 + bw * 1.06f, top - g * .6f) }
+        c.drawPath(tetto, Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = max(1.2f, s * .035f); strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND; color = Color.argb(150, 201, 232, 249) })
+    }
+
+    private fun impianto(s: FvStato?, id: String): FvImpianto? = s?.impianti?.firstOrNull { it.id == id }
+
+    private fun nomeDi(id: String) = if (id == "casa_22") "CASA 22" else "CASA M&G"
+
+    /** Widget a una riga (4 x 1) per un solo impianto: palazzina, nome e produzione di oggi, carica, solare, casa, rete */
+    fun riga(ctx: Context, s: FvStato?, impId: String, esito: String, wPx: Int, hPx: Int): Bitmap {
+        val w = wPx.coerceIn(220, 1000); val h = (hPx * w / wPx.toFloat()).roundToInt().coerceIn(60, 260)
+        val imp = impianto(s, impId)
+        if (s == null || imp == null) return messaggio(ctx, w, h, if (s != null) "Impianto ${nomeDi(impId)} non trovato" else if (esito.isBlank()) "Apri l'app Tesla Charge Cost > Impostazioni e collega il widget." else esito)
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888); val c = Canvas(bmp)
+        val wf = w.toFloat(); val hf = h.toFloat()
+        WidgetRenderer.fondo(c, wf, hf, min(wf, hf) * .22f)
+        val bold = WidgetRenderer.font(ctx, true); val reg = WidgetRenderer.font(ctx, false)
+        edificio(c, wf * .065f + hf * .12f, hf * .52f, hf * .66f, impId)
+        val nx = wf * .04f + hf * .62f
+        WidgetRenderer.testo(c, nomeDi(impId), nx, hf * .46f, hf * .19f, WidgetRenderer.TEXT, bold, spacing = .05f)
+        WidgetRenderer.testo(c, "OGGI " + n1(imp.oggiPv) + " kWh", nx, hf * .76f, hf * .16f, SOLE, reg, spacing = .03f)
+
+        val soc = imp.soc?.roundToInt()
+        val col = WidgetRenderer.socColor(soc)
+        val sx = wf * .475f
+        WidgetRenderer.testo(c, (soc?.toString() ?: "—") + "%", sx, hf * .60f, hf * .33f, col, bold, glow = col)
+        val bx0 = sx; val bw = wf * .13f; val by = hf * .75f; val bhh = hf * .07f
+        c.drawRoundRect(RectF(bx0, by, bx0 + bw, by + bhh), bhh / 2, bhh / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(40, 255, 255, 255) })
+        if (soc != null && soc > 0) c.drawRoundRect(RectF(bx0, by, bx0 + bw * soc / 100f, by + bhh), bhh / 2, bhh / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = col; setShadowLayer(bhh, 0f, 0f, col) })
+
+        val rete = imp.reteKw
+        fun colonna(cx: Float, etichetta: String, valore: String, colore: Int) {
+            WidgetRenderer.testo(c, valore, cx, hf * .58f, hf * .25f, WidgetRenderer.TEXT, bold, Paint.Align.CENTER)
+            WidgetRenderer.testo(c, etichetta, cx, hf * .84f, hf * .15f, colore, reg, Paint.Align.CENTER, spacing = .06f)
+        }
+        colonna(wf * .72f, "SOLE", n1(imp.pvKw), SOLE)
+        colonna(wf * .825f, "CASA", n1(imp.casaKw), CASA)
+        colonna(wf * .93f, "RETE", segno(rete), if (rete != null && rete > 0.02) RETE else BATT)
+        if (!s.online) WidgetRenderer.testo(c, "NON AGGIORNATO", wf - hf * .22f, hf * .2f, hf * .13f, WidgetRenderer.DANGER, reg, Paint.Align.RIGHT, spacing = .06f)
+        WidgetRenderer.cornice(c, wf, hf, min(wf, hf) * .22f)
+        return bmp
+    }
+
+    /** Widget compatto (2 x 1) per un solo impianto: palazzina e nome, carica della batteria, produzione attuale */
+    fun compatto(ctx: Context, s: FvStato?, impId: String, esito: String, wPx: Int, hPx: Int): Bitmap {
+        val w = wPx.coerceIn(120, 600); val h = (hPx * w / wPx.toFloat()).roundToInt().coerceIn(60, 360)
+        val imp = impianto(s, impId)
+        if (s == null || imp == null) return messaggio(ctx, w, h, if (s != null) "Impianto ${nomeDi(impId)} non trovato" else if (esito.isBlank()) "Apri l'app Tesla Charge Cost > Impostazioni e collega il widget." else esito)
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888); val c = Canvas(bmp)
+        val wf = w.toFloat(); val hf = h.toFloat()
+        WidgetRenderer.fondo(c, wf, hf, min(wf, hf) * .20f)
+        val bold = WidgetRenderer.font(ctx, true); val reg = WidgetRenderer.font(ctx, false)
+        val pad = min(wf, hf) * .12f
+        edificio(c, pad + hf * .11f, hf * .24f, hf * .34f, impId)
+        WidgetRenderer.testo(c, nomeDi(impId), pad + hf * .30f, hf * .31f, hf * .19f, WidgetRenderer.TEXT, bold, spacing = .05f)
+        val soc = imp.soc?.roundToInt()
+        val col = WidgetRenderer.socColor(soc)
+        WidgetRenderer.testo(c, (soc?.toString() ?: "—") + "%", pad, hf * .72f, hf * .40f, col, bold, glow = col)
+        // freccia della batteria: su = in carica, giù = in scarica
+        val carica = (imp.battKw ?: 0.0)
+        if (abs(carica) > 0.02) {
+            val ax = wf - pad - hf * .08f; val ay = hf * .58f; val t = hf * .09f
+            val tri = Path().apply {
+                if (carica > 0) { moveTo(ax - t, ay + t * .6f); lineTo(ax + t, ay + t * .6f); lineTo(ax, ay - t * .8f) }
+                else { moveTo(ax - t, ay - t * .6f); lineTo(ax + t, ay - t * .6f); lineTo(ax, ay + t * .8f) }
+                close()
+            }
+            val colF = if (carica > 0) BATT else WidgetRenderer.DANGER
+            c.drawPath(tri, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colF; setShadowLayer(t * .8f, 0f, 0f, colF) })
+        }
+        sole(c, pad + hf * .08f, hf * .865f, hf * .085f, SOLE)
+        WidgetRenderer.testo(c, n2(imp.pvKw) + " kW", pad + hf * .26f, hf * .92f, hf * .17f, if (s.online) WidgetRenderer.TEXT else WidgetRenderer.DANGER, reg)
+        WidgetRenderer.cornice(c, wf, hf, min(wf, hf) * .20f)
+        return bmp
+    }
 }

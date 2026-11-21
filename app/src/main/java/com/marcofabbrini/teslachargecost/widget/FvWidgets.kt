@@ -89,3 +89,19 @@ class FvLargeWidget : FvWidgetBase() {
         }
     }
 }
+
+/** Widget per un solo impianto: a una riga (4 x 1) o compatto (2 x 1). L'impianto si riconosce dall'id restituito dal sito. */
+abstract class FvSingoloWidget(private val impId: String, private val compatto: Boolean) : FvWidgetBase() {
+    override val dimDefault = if (compatto) 110 to 70 else 250 to 70
+    override fun viste(ctx: Context, s: FvStato?, esito: String, wDp: Int, hDp: Int): RemoteViews {
+        val (w, h) = TeslaWidgetBase.scala(px(ctx, wDp), px(ctx, hDp))
+        return RemoteViews(ctx.packageName, R.layout.widget_image).apply {
+            setImageViewBitmap(R.id.widget_img, if (compatto) FvRenderer.compatto(ctx, s, impId, esito, w, h) else FvRenderer.riga(ctx, s, impId, esito, w, h))
+        }
+    }
+}
+
+class FvMgRigaWidget : FvSingoloWidget("casa_mg", false)
+class FvMgCompattoWidget : FvSingoloWidget("casa_mg", true)
+class Fv22RigaWidget : FvSingoloWidget("casa_22", false)
+class Fv22CompattoWidget : FvSingoloWidget("casa_22", true)
