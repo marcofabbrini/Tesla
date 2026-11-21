@@ -26,6 +26,8 @@ data class TeslaStato(
     val casa: Boolean,
     val ts: Long?,
     val clima: Boolean? = null,
+    /** quando sono state rilevate le pressioni, se non vengono dall'ultima lettura (auto ferma) */
+    val gommeTs: Long? = null,
     /** ultimo comando dai widget: cmd, stato (in_coda, inviato, ok, errore, nessuna_risposta), ts */
     val comando: Comando? = null,
 )
@@ -139,6 +141,7 @@ object TeslaApi {
                 bloccata = b("bloccata"), sentinella = b("sentinella"), casa = o.optBoolean("casa"),
                 ts = runCatching { Instant.parse(o.getString("ts")).toEpochMilli() }.getOrNull(),
                 clima = b("clima"),
+                gommeTs = if (o.isNull("gomme_ts")) null else runCatching { Instant.parse(o.getString("gomme_ts")).toEpochMilli() }.getOrNull(),
                 comando = o.optJSONObject("comando")?.let { c ->
                     Comando(c.optString("cmd"), c.optString("stato"), runCatching { Instant.parse(c.getString("ts")).toEpochMilli() }.getOrNull())
                 },

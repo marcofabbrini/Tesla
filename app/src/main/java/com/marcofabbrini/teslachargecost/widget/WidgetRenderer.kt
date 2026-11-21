@@ -298,8 +298,10 @@ object WidgetRenderer {
             val nd = a == null && b == null
             testo(c, valTxt(a, b), x, by, if (nd) sz * .9f else sz * 1.2f, if (nd) DIM else if (warn(a, b)) Color.rgb(255, 154, 163) else Color.WHITE, if (nd) reg else bold, al)
         }
-        gomme(pad, Paint.Align.LEFT, "GOMME ANTERIORI", g.getOrNull(0), g.getOrNull(1))
-        gomme(rx, Paint.Align.RIGHT, "GOMME POSTERIORI", g.getOrNull(2), g.getOrNull(3))
+        // pressioni di una lettura precedente (auto ferma): la data accanto al titolo
+        val gd = s.gommeTs?.let { " · " + SimpleDateFormat("dd/MM", Locale.ITALIAN).format(Date(it)) } ?: ""
+        gomme(pad, Paint.Align.LEFT, "GOMME ANTERIORI$gd", g.getOrNull(0), g.getOrNull(1))
+        gomme(rx, Paint.Align.RIGHT, "GOMME POSTERIORI$gd", g.getOrNull(2), g.getOrNull(3))
 
         cornice(c, wf, hf, rad)
         return bmp
