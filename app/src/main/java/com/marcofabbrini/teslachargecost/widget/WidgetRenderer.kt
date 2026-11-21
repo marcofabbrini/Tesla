@@ -144,14 +144,14 @@ object WidgetRenderer {
 
     /** Cornice ambra sottile con angoli più spessi e luminosi (come le staffe agli angoli) */
     fun cornice(c: Canvas, w: Float, h: Float, rad: Float) {
-        val m = min(w, h) * .022f
+        val m = min(w, h) * .02f
         val r = RectF(m, m, w - m, h - m)
         val rr = rad * .85f
-        val sottile = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = max(1.5f, min(w, h) * .006f); color = Color.argb(170, 231, 167, 101) }
+        val sottile = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = max(1f, min(w, h) * .0035f); color = Color.argb(90, 231, 167, 101) }
         c.drawRoundRect(r, rr, rr, sottile)
         val spesso = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE; strokeWidth = max(3f, min(w, h) * .016f); strokeCap = Paint.Cap.ROUND; color = Color.rgb(236, 178, 104)
-            setShadowLayer(min(w, h) * .02f, 0f, 0f, Color.argb(150, 231, 167, 101))
+            style = Paint.Style.STROKE; strokeWidth = max(2f, min(w, h) * .008f); strokeCap = Paint.Cap.ROUND; color = Color.argb(200, 236, 178, 104)
+            setShadowLayer(min(w, h) * .01f, 0f, 0f, Color.argb(90, 231, 167, 101))
         }
         val l = rr + min(w, h) * .05f
         // un tratto per angolo: lato, curva, lato
@@ -224,15 +224,18 @@ object WidgetRenderer {
         c.drawRoundRect(RectF(0f, 0f, wf, hf), rad, rad, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK })
         val bold = font(ctx, true); val reg = font(ctx, false)
         val col = socColor(s.soc)
-        val pad = mn * .07f
-        val sz = mn * .05f
+        val pad = mn * .095f
+        val sz = mn * .048f
+        var hubA: Pair<Float, Float>? = null; var hubP: Pair<Float, Float>? = null
 
         // auto (foto 1672 x 941 su fondo nero) tra le scritte in alto e le pressioni in fondo, bordi sfumati nel nero
         val img = carBitmap(ctx)
         if (img != null) {
-            var iw = wf * 1.04f; var ih = iw * img.height / img.width
-            if (ih > hf * .54f) { ih = hf * .54f; iw = ih * img.width / img.height }
-            val ix = (wf - iw) / 2f; val iy = hf * .80f - ih * .81f
+            var iw = wf - pad * 1.2f; var ih = iw * img.height / img.width
+            if (ih > hf * .44f) { ih = hf * .44f; iw = ih * img.width / img.height }
+            val ix = (wf - iw) / 2f; val iy = hf * .78f - ih * .81f
+            hubA = Pair(ix + 710f * iw / 1672f, iy + 605f * ih / 941f)
+            hubP = Pair(ix + 1475f * iw / 1672f, iy + 542f * ih / 941f)
             c.save(); c.clipRect(RectF(1f, 1f, wf - 1f, hf - 1f))
             c.drawBitmap(img, null, RectF(ix, iy, ix + iw, iy + ih), Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
             val f = Paint()
@@ -243,7 +246,7 @@ object WidgetRenderer {
             c.restore()
         }
 
-        val top = pad * .8f
+        val top = pad * .75f
         // a sinistra, allineate al bordo: batteria, percentuale, autonomia, stato
         val bw = mn * .30f
         batteria(c, pad - bw * .04f, top, bw, s.soc, s.limite, s.inCarica)
@@ -255,24 +258,39 @@ object WidgetRenderer {
 
         // a destra, allineate al bordo: Tesla, lucchetto, chiusura, temperature, ora
         val rx = wf - pad
-        testo(c, "TESLA", rx, top + sz * .8f, sz * .8f, Color.argb(235, 233, 238, 243), tesla(ctx), Paint.Align.RIGHT, spacing = .35f)
+        val red = Color.rgb(232, 33, 39)
+        testo(c, "TESLA", rx, top + sz * 1.05f, sz * 1.15f, red, tesla(ctx), Paint.Align.RIGHT, glow = Color.argb(200, 232, 33, 39), spacing = .3f)
         val lk = mn * .11f
-        val ly = top + sz * 1.3f + lk * .5f
+        val ly = top + sz * 1.75f + lk * .5f
         lucchetto(c, rx - lk * .45f, ly, lk, s.bloccata)
         val yy = ly + lk * .5f + sz * 1.2f
         testo(c, when (s.bloccata) { true -> "CHIUSA"; false -> "APERTA"; else -> "" }, rx, yy, sz * 1.15f,
             when (s.bloccata) { false -> DANGER; else -> ICE }, bold, Paint.Align.RIGHT, spacing = .12f)
-        testo(c, listOfNotNull(s.tempInt?.let { f1(it) + "°" }, s.tempEst?.let { "fuori " + f1(it) + "°" }).joinToString(" · "), rx, yy + sz * 1.25f, sz, TEXT, reg, Paint.Align.RIGHT)
+        val tt = listOfNotNull(s.tempInt?.let { "Int. " + f1(it) + "°" }, s.tempEst?.let { "Est. " + f1(it) + "°" }).joinToString("  ")
+        if (tt.isNotEmpty()) {
+            testo(c, tt, rx, yy + sz * 1.25f, sz, TEXT, reg, Paint.Align.RIGHT)
+            val tw = Paint().apply { textSize = sz; typeface = reg }.measureText(tt)
+            termometro(c, rx - tw - sz * .55f, yy + sz * 1.25f - sz * .38f, sz * 1.05f)
+        }
         testo(c, ora(s.ts), rx, yy + sz * 2.4f, sz * .9f, ORA, reg, Paint.Align.RIGHT)
 
         // in fondo, staccate dall'immagine: pressioni delle gomme
         val by = hf - pad * .9f
-        c.drawLine(pad, by - sz * 2.6f, wf - pad, by - sz * 2.6f, Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeWidth = max(1.5f, mn * .002f); color = Color.argb(70, 201, 232, 249) })
         val g = s.gomme
         fun warn(a: Double?, b: Double?) = (a != null && a < 2.6) || (b != null && b < 2.6)
         fun valTxt(a: Double?, b: Double?) = if (a == null && b == null) "non disponibili" else f1(a) + " · " + f1(b) + " bar"
         fun gomme(x: Float, al: Paint.Align, titolo: String, a: Double?, b: Double?) {
             testo(c, titolo, x, by - sz * 1.45f, sz * .75f, Color.argb(200, 201, 232, 249), reg, al, spacing = .12f)
+            // stanghetta dal pneumatico all'etichetta
+            val hub = if (al == Paint.Align.LEFT) hubA else hubP
+            if (hub != null) {
+                val tw = Paint().apply { textSize = sz * .75f; typeface = reg; letterSpacing = .12f }.measureText(titolo)
+                // arriva sopra l'etichetta, nel tratto occupato dal titolo
+                val x0 = if (al == Paint.Align.LEFT) x else x - tw
+                val kx = hub.first.coerceIn(x0 + sz * .6f, x0 + tw - sz * .6f)
+                val ky = by - sz * 2.35f
+                stanghetta(c, percorso(hub, Pair(kx, ky), ky), sz, warn(a, b))
+            }
             val nd = a == null && b == null
             testo(c, valTxt(a, b), x, by, if (nd) sz * .9f else sz * 1.2f, if (nd) DIM else if (warn(a, b)) Color.rgb(255, 154, 163) else Color.WHITE, if (nd) reg else bold, al)
         }
@@ -281,6 +299,17 @@ object WidgetRenderer {
 
         cornice(c, wf, hf, rad)
         return bmp
+    }
+
+    /** Termometro piccolo (bulbo e colonnina), centrato in (cx, cy) */
+    private fun termometro(c: Canvas, cx: Float, cy: Float, s: Float) {
+        val st = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = max(1.5f, s * .09f); color = ICE }
+        val fi = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ACCENT; setShadowLayer(s * .15f, 0f, 0f, ACCENT) }
+        val tw = s * .16f
+        c.drawRoundRect(RectF(cx - tw, cy - s * .5f, cx + tw, cy + s * .2f), tw, tw, st)
+        c.drawCircle(cx, cy + s * .3f, s * .2f, st)
+        c.drawCircle(cx, cy + s * .3f, s * .12f, fi)
+        c.drawRect(cx - tw * .35f, cy - s * .15f, cx + tw * .35f, cy + s * .25f, fi)
     }
 
     /** Percorso a angoli aperti: diagonale a 45° fino alla quota ym, tratto orizzontale, diagonale fino all'arrivo */
